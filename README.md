@@ -4,7 +4,7 @@
 ![Reproducibility](https://img.shields.io/badge/Reproducible-Yes-success)
 ![Publication](https://img.shields.io/badge/Status-Under%20Review-yellow)
 
-> 📢 **Note:** **Upon formal publication of the paper describing this work (if accepted), the full dataset and processing scripts will be published under an open license in [Zenodo](https://zenodo.org), and this section will be updated to its final form. This release will enable other researchers to fully reproduce our machine-learning experiments, compare new algorithms, and extend vessel-detection efforts in other submarine-cable contexts.**
+> 📢 **Note:** **Upon formal publication of the paper describing this work (if accepted), the full dataset and processing scripts will be published under an open license in [Zenodo](https://zenodo.org), and this section will be updated to its final form. This release will enable other researchers to fully reproduce our machine-learning experiments, compare new algorithms, and extend vessel-detection efforts in other submarine-cable contexts. For interested researchers we provide now a reduced dataset (10 minutes of the original 10 days processed recordings), to have an idea of the expected full content.**
 
 This repository accompanies the research on vessel detection and localization using Distributed Acoustic Sensing (DAS) technology applied to submarine telecommunication cables. The project leverages repurposed submarine fiber optic cables as large-scale acoustic sensor arrays to continuously monitor maritime traffic and detect vessels in real time. 
 
