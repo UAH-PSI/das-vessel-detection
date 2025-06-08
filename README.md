@@ -102,11 +102,11 @@ The dataset provides ground truth labels related to the distance from the fiber 
 
 1. AIS data interpolation and time alignment
 
-The original AIS positions provided by the data owner were interpolated at a reporting period of 1 second to improve the spatial and temporal resolution, aligning each vessel’s location with the timestamp corresponding to the middle point of each 10-seconds DAS window (which is stored in the `datetimes` array).
+   The original AIS positions provided by the data owner were interpolated at a reporting period of 1 second to improve the spatial and temporal resolution, aligning each vessel’s location with the timestamp corresponding to the middle point of each 10-seconds DAS window (which is stored in the `datetimes` array).
 
 2. Computing closest-vessel distance using AIS data:
 
-For every timestamped window, we calculate the Euclidean distance from the cable to each AIS reported vessel, then take the minimum distance as the “closest‐vessel distance”. This continuous value (in meters) is stored in the `y` array for that timestamp.
+   For every timestamped window, we calculate the Euclidean distance from the cable to each AIS reported vessel, then take the minimum distance as the “closest‐vessel distance”. This continuous value (in meters) is stored in the `y` array for that timestamp.
 
 
 ## Data availability
