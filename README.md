@@ -22,6 +22,7 @@ For in-depth details on dataset acquisition, instrumentation, and methodology, p
 - [Data Loading and Processing](#data-loading-and-processing)
 - [Setup Instructions](#setup-instructions)
 - [How to Cite](#how-to-cite)
+- [Supplementary Material](#supplementary-material)
 - [Funding and Acknowledgements](#funding-and-acknowledgements)
 - [Contact](#contact)
 
@@ -288,6 +289,12 @@ If you use these data or code in your work, please cite the following paper:
 > Submitted to IEEE Transactions on Geoscience & Remote Sensing, 2025.
 >
 > DOI: *(to be assigned upon publication, if the paper is accepted)*
+
+---
+
+# Supplementary Material
+
+We have generated an additional [web page with supplementary material](https://geintra-uah.org/psi/index.html). It mainly consist of  videos demonstrating the behaviour of the algorithm under different conditions. It is available at [https://geintra-uah.org/psi/index.html](https://geintra-uah.org/psi/index.html).
 
 ---
 
