@@ -93,7 +93,7 @@ This section provides details on the processing from differential strain phase r
 3. **Spectral feature extraction (`N_bands=100` energy bands):**
 
    - For each 10-seconds window and for each of the `N_channels` channels, the power spectral density (PSD) between `f_ini=4 Hz` and `f_end=98 Hz` was computed, using a FFT analysis with `N_FFT=31250` FFT samples, and excluding the `(48 Hz, 52 Hz)` frequency range (see the paper for details).
-   - That spectral range was split into **`N_bands=100`** logarithmically spaced frequency bands. The total power in each band was integrated to produce one energy value per band. File [fbands.csv](https://github.com/UAH-PSI/das-vessel-detection/blob/main/data/fbands.csv])) contains the frequency band limits for reference purposes.
+   - That spectral range was split into **`N_bands=100`** logarithmically spaced frequency bands. The total power in each band was integrated to produce one energy value per band. File [fbands.csv](https://github.com/UAH-PSI/das-vessel-detection/blob/main/data/fbands.csv) contains the frequency band limits for reference purposes.
    - The final result for each 10-second long signal window is a `(N_channels, N_bands)=(250, 100) “energy-band” matrix.
 
 
