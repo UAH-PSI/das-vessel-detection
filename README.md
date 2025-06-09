@@ -33,7 +33,7 @@ Submarine cables are critical infrastructure for global connectivity but vulnera
 
 This project exploits DAS sensors embedded in submarine cables to detect and localize vessels based on acoustic signals. The system operates continuously, independently of vessel cooperation (e.g., AIS), and performs robustly regardless of environmental conditions.
 
-The dataset corresponds to a continuous ten-day DAS recording campaign, encompassing diverse vessel types, sizes, and speeds, in a 26 km long submarine optical fiber cable. The data selected for this work covers a 2,553 m fiber length segment with 250 spatial sensor channels sampled over time. 
+The dataset corresponds to a continuous ten-day DAS recording campaign, encompassing diverse vessel types, sizes, and speeds, in a 28 km long submarine optical fiber cable. The data selected for this work covers a 2,553 m fiber length segment with 250 spatial sensor channels sampled over time. 
 
 > **Data Sharing Constraints and Our Alternative**
 > Due to the data‐owner’s restrictions, we are unable to publish the original raw differential‐strain recordings nor details on precise geographical localization. Instead, we commit to full transparency and reproducibility by releasing preprocessed feature vectors (energy‐band values over 10 second windows) along with comprehensive labelling metadata (timestamps, distance to nearest vessel, and vessel information) and example code. The GitHub repository also documents the exact data schema, loading routines, and processing steps. The data will be publicly available once the manuscript describing our proposal is, if accepted, formally published (see the [citation section](#How-to-Cite)). Hosting will be done in Zenodo under an open license, ensuring that future researchers can reproduce our results without compromising the owner’s raw data agreements.
@@ -82,7 +82,7 @@ This section provides details on the processing from differential strain phase r
 
 1. **Continuous DAS recording (raw signals):**
 
-   - A differential strain phase-measuring interrogator (Alcatel OptoDAS, located in an off-shore platform) recorded differential phase at a sampling frequency of `f_s=3125 Hz` from a pre-existing ocean-bottom optical fiber cable, configured with `L=10.21 m` gauge length, yielding around 2600 raw spatial channels along the 26 km of fiber.
+   - A differential strain phase-measuring interrogator (Alcatel OptoDAS, located in an off-shore platform) recorded differential phase at a sampling frequency of `f_s=3125 Hz` from a pre-existing ocean-bottom optical fiber cable, configured with `L=10.21 m` gauge length, yielding 2774 raw spatial channels along the 28 km of fiber.
    - For our experiments, a contiguous 2553-meter fiber segment was selected, corresponding to `N_channels=250` spatial channels (each of them \~10.21 m apart), located between 14707 and 17260 meters from the interrogator.
 
 2. **Windowing into 10-second frames:**
