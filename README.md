@@ -1,7 +1,7 @@
 # Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables
 
 ![Dataset](https://img.shields.io/badge/Dataset-Zenodo%20Open%20License-blue)
-![Reproducibility](https://img.shields.io/badge/Reproducible-Yes-success)
+![Reproducibility](https://img.shields.io/badge/Reproducible-Under%20Review-yellow)
 ![Publication](https://img.shields.io/badge/Status-Under%20Review-yellow)
 
 > 📢 **Note:** **Upon formal publication of the paper describing this work (if accepted), the full dataset and processing scripts will be published under an open license in [Zenodo](https://zenodo.org), and this repository will be updated to its final form. This release will enable other researchers to fully reproduce our machine-learning experiments, compare new algorithms, and extend vessel-detection efforts in other submarine-cable contexts. For interested researchers we initially provide here a reduced version of the full dataset (10 minutes of the original 10 days processed recordings), to give an idea of the expected full content.**
