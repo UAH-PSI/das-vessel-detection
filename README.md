@@ -4,7 +4,7 @@
 ![Reproducibility](https://img.shields.io/badge/Reproducible-Under%20Review-yellow)
 ![Publication](https://img.shields.io/badge/Status-Under%20Review-yellow)
 
-> 📢 **Note:** **Upon formal publication of the paper describing this work (if accepted), the full dataset and processing scripts will be published under an open license in [Zenodo](https://zenodo.org), and this repository will be updated to its final form. This release will enable other researchers to fully reproduce our machine-learning experiments, compare new algorithms, and extend vessel-detection efforts in other submarine-cable contexts. For interested researchers we initially provide here a reduced version of the full dataset (10 minutes of the original 10 days processed recordings), to give an idea of the expected full content.**
+> 📢 **Note:** **Upon formal publication of the paper describing this work (if accepted), the full dataset will be published under an open license in [Zenodo](https://zenodo.org), and this repository will be updated to its final form, including full processing scripts. This release will enable other researchers to fully reproduce our machine-learning experiments, compare new algorithms, and extend vessel-detection efforts in other submarine-cable contexts. For interested researchers we initially provide here a reduced version of the full dataset (10 minutes of the original 10 days processed recordings), to give an idea of the expected full content.**
 
 This repository accompanies the research on vessel detection and localization using Distributed Acoustic Sensing (DAS) technology applied to submarine telecommunication cables. The project leverages repurposed submarine fiber optic cables as large-scale acoustic sensor arrays to continuously monitor maritime traffic and detect vessels in real time. 
 
@@ -110,21 +110,20 @@ The dataset provides ground truth labels related to the distance from the fiber 
    For every timestamped window, we calculate the Euclidean distance from the cable to each AIS reported vessel, then take the minimum distance as the “closest‐vessel distance”. This continuous value (in meters) is stored in the `y` array for that timestamp.
 
 
-## Data availability
-
-> 📢 **Note:** The link to the Zenodo page hosting the dataset will be available upon formal publication of the paper describing this work (if accepted)
-
-The dataset is available at Zenodo at [Marlinks-NorthSea dataset](https://doi.org/10.5281/zenodo.15611778). 
-
-
 ## Data packaging into HDF5
-
 
    - All processed windows produce `N_samples` feature matrices of shape `(N_channels, N_bands)`, stacked into `X`.
    - Corresponding labels go into `y`, and UTC timestamps into `datetimes`.
    - Optionally, the raw AIS metadata (vessel type, speed, MMSI) are stored under `ship_info`.
 
 By framing each 10-seconds interval as a `(N_channels, N_bands)` energy-band snapshot, this dataset enables machine-learning models to learn vessel detection and distance-estimation based on both spatial patterns (across neighboring fiber channels), temporal patterns (across neighboring timestamps) and spectral content.
+
+## Data availability
+
+> 📢 **Note:** The link to the Zenodo page hosting the dataset will be available upon formal publication of the paper describing this work (if accepted)
+
+The dataset used in our work is available at Zenodo at the [Marlinks-NS DAS dataset page](https://doi.org/10.5281/zenodo.15611778). 
+
 
 ---
 
