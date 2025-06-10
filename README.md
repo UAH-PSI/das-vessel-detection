@@ -293,7 +293,7 @@ If you use these data or code in your work, please cite the following paper:
 
 # Supplementary Material
 
-We have generated an additional [web page with supplementary material](https://geintra-uah.org/psi/index.html). It mainly consist of  videos demonstrating the behaviour of the algorithm under different conditions. It is available at [https://geintra-uah.org/psi/index.html](https://geintra-uah.org/psi/index.html).
+We have generated an additional [web page with supplementary material](https://geintra-uah.org/psi/index.html). It mainly consists of  videos demonstrating the behaviour of the algorithm under different conditions. It is available at [https://geintra-uah.org/psi/index.html](https://geintra-uah.org/psi/index.html).
 
 ---
 
