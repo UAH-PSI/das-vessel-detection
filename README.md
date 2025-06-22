@@ -285,7 +285,7 @@ If you use these data or code in your work, please cite the following paper:
 
 > **Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables**
 > Erick Eduardo Ramirez-Torres, Javier Macias-Guarasa, Daniel Pizarro-Perez, Javier Tejedor, Sira Elena Palazuelos-Cagigas, Pedro J. Vidal-Moreno, Sonia Martin-Lopez, Miguel Gonzalez-Herraez, Roel Vanthillo.
-> Submitted to IEEE Transactions on Geoscience & Remote Sensing, 2025.
+> Submitted to IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing, 2025.
 >
 > DOI: *(to be assigned upon publication, if the paper is accepted)*
 
