@@ -47,18 +47,18 @@ The original raw DAS recordings, the precise cable route and other sensitive geo
 
 The complete released dataset is available from Zenodo:
 
-> **Marlinks-NS DAS: Dataset for vessel detection and distance estimation using distributed acoustic sensing in submarine optical fiber cables**  
+> **Marlinks-NS DAS Dataset for vessel detection and distance estimation using distributed acoustic sensing in submarine optical fiber cables**  
 > [https://doi.org/10.5281/zenodo.15611778](https://doi.org/10.5281/zenodo.15611778)
 
 The Zenodo record is the authoritative source for:
 
-- the complete processed HDF5 dataset;
-- the definitive dataset documentation and file inventory;
-- the HDF5 schema and field descriptions;
-- acquisition, processing and ground-truth generation details;
-- known limitations and usage considerations;
-- dataset licensing and citation metadata; and
-- minimal standalone examples for inspecting, loading, validating and partitioning the data.
+- The complete processed HDF5 dataset.
+- The definitive dataset documentation and file inventory.
+- The HDF5 schema and field descriptions.
+- Acquisition, processing and ground-truth generation details.
+- Known limitations and usage considerations.
+- Dataset licensing and citation metadata.
+- Minimal standalone examples for inspecting, loading, validating and partitioning the data.
 
 This GitHub repository also retains `data/reduced_dataset_sensor_range_1440_1690.h5`, a 10-minute extract containing a representative vessel-crossing event. It is provided only as a lightweight demonstration asset for rapidly testing the repository scripts; it is not an alternative distribution of the complete dataset.
 
@@ -68,8 +68,8 @@ The released HDF5 file contains 74,771 sample-aligned observations:
 |-------------|-------------------------------------------------------:|-------------------------------------------------------------------------------------------------|
 | `X`         |                                    `(74771, 250, 100)` | DAS energy-band features, ordered as `(sample, spatial channel, frequency band)`                |
 | `y`         |                                             `(74771,)` | Distance in meters to the closest AIS-reported vessel for each observation                      |
-| `ship_info` | HDF5 group containing three arrays of shape `(74771,)` | AIS-derived vessel type, length and beam of the closest vessel associated with each observation |
 | `datetimes` |                                             `(74771,)` | UTC timestamps corresponding to each observation, formatted as `%Y-%m-%d %H:%M:%S%z`            |
+| `ship_info` | HDF5 group containing three arrays of shape `(74771,)` | AIS-derived vessel type, length and beam of the closest vessel associated with each observation |
 
 Thus, each sample consists of one `250 × 100` spatial-spectral feature matrix in `X`, one closest-vessel distance in `y`, the corresponding vessel attributes in `ship_info`, and one timestamp. The observations cover 16–25 June 2023 (UTC) and correspond to non-overlapping 10-second windows over a 2,553 m cable segment. The 100 spectral features are logarithmically spaced energy bands spanning 4–98 Hz, excluding 49–51 Hz.
 
@@ -86,15 +86,15 @@ For the complete and current technical description, refer to the documentation i
 
 The main repository resources include:
 
-| Path                                                              | Purpose                                                             |
-|-------------------------------------------------------------------|---------------------------------------------------------------------|
-| `src/`                                                            | Dataset loading, partitioning, plotting and reproducibility scripts |
-| `data/reduced_dataset_sensor_range_1440_1690.h5`                  | Ten-minute demonstration extract                                    |
-| `data/fbands.csv`                                                 | Frequency-band boundaries used for feature extraction               |
-| `data/combined_plot_interval_20230616T155500_20230626T160500.png` | Example visualization generated from the demonstration data         |
-| `requirements.txt`                                                | Python package requirements                                         |
-| `logos/`                                                          | Funding and acknowledgment graphics                                 |
-| `LICENSE`                                                         | License applying to the repository software                         |
+| Path                                             | Purpose                                                             |
+|--------------------------------------------------|---------------------------------------------------------------------|
+| `src/`                                           | Dataset loading, partitioning, plotting and reproducibility scripts |
+| `data/reduced_dataset_sensor_range_1440_1690.h5` | Ten-minute demonstration extract                                    |
+| `data/fbands.csv`                                | Frequency-band boundaries used for feature extraction               |
+| `data/combined_plot_interval_...0.png`           | Example visualization generated from the demonstration data         |
+| `requirements.txt`                               | Python package requirements                                         |
+| `logos/`                                         | Funding and acknowledgment graphics                                 |
+| `LICENSE`                                        | License applying to the repository software                         |
 
 The repository is the actively maintained location for software updates and extended reproducibility material. The complete released data remain versioned and preserved in Zenodo.
 
