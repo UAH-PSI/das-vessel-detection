@@ -9,9 +9,9 @@
 
 This repository provides the maintained companion software and reproducibility resources for our research group's work on vessel monitoring using distributed acoustic sensing (DAS) in submarine optical fiber cables. It supports:
 
-- The accepted IEEE JSTARS article on vessel detection and localization.
-- The submitted *Scientific Data* Data Descriptor presenting the Marlinks-NS DAS dataset.
-- The published [Marlinks-NS DAS dataset deposited in Zenodo](https://doi.org/10.5281/zenodo.15611778).
+1. The published [Marlinks-NS DAS dataset deposited in Zenodo](https://doi.org/10.5281/zenodo.15611778).
+2. The accepted [IEEE JSTARS article](https://doi.org/10.1109/JSTARS.2026.3716768) describing our vessel-detection and localization methodology and experiments.
+3. The [ArXiV preprint documenting and validating the Marlinks-NS dataset](https://doi.org/...) (submitted to be considered for publication as a Data Descriptor in the *Scientific Data* journal).
 
 The complete dataset and its definitive documentation are distributed through Zenodo. This repository contains complementary source code, reproducibility workflows, plotting tools, frequency-band definitions, a small demonstration dataset and supplementary resources.
 
@@ -199,7 +199,7 @@ The [project supplementary website](https://geintra-uah.org/psi/index.html) prov
 
 ### IEEE JSTARS article
 
-E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro-Perez, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables,” *IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing*, 2026.  
+E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables,” *IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing*, 2026.  
 [https://doi.org/10.1109/JSTARS.2026.3716768](https://doi.org/10.1109/JSTARS.2026.3716768)
 
 ### Scientific Data Data Descriptor
@@ -210,21 +210,23 @@ E. E. Ramirez-Torres et al., “Marlinks-NS DAS: Dataset for vessel detection an
 
 ## How to cite
 
-If you use the dataset, repository software, methodology, experimental results or associated supplementary resources, please cite both companion publications and the Zenodo dataset. The three references document complementary aspects of the work: the machine-learning methodology and experiments, the dataset design and validation, and the specific released dataset.
+If you use the dataset, repository software, methodology, experimental results or associated supplementary resources, please cite the following related research outputs:
 
-Until the *Scientific Data* preprint is available, please cite the JSTARS article and the Zenodo dataset below. The third citation will be added when the arXiv preprint becomes available and updated following publication of the Data Descriptor.
+1. The published [Marlinks-NS DAS dataset deposited in Zenodo](https://doi.org/10.5281/zenodo.15611778).
+2. The accepted [IEEE JSTARS article](https://doi.org/10.1109/JSTARS.2026.3716768) describing our vessel-detection and localization methodology and experiments.
+3. The [ArXiV preprint documenting and validating the Marlinks-NS dataset](https://doi.org/...) (submitted to be considered for publication as a Data Descriptor in the *Scientific Data* journal).
 
-### 1. IEEE JSTARS accepted article
+### 1. Zenodo dataset
 
-> E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro-Perez, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables”, *IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing*, 2026. Accepted for publication. [https://doi.org/10.1109/JSTARS.2026.3716768](https://doi.org/10.1109/JSTARS.2026.3716768)
+> E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, M. R. Fernández-Ruiz, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Marlinks-NS DAS Dataset for vessel detection and distance estimation using distributed acoustic sensing in submarine optical fiber cables”, Zenodo. doi: [10.5281/zenodo.15611778](https://doi.org/10.5281/zenodo.15611778)
 
-### 2. Zenodo dataset
+### 2. IEEE JSTARS accepted article
 
-> E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro-Perez, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, M. R. Fernández-Ruiz, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Marlinks-NS DAS Dataset for vessel detection and distance estimation using distributed acoustic sensing in submarine optical fiber cables”, Zenodo. [https://doi.org/10.5281/zenodo.15611778](https://doi.org/10.5281/zenodo.15611778)
+> E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables”. Accepted for publication in the IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing, 2026. doi: [10.1109/JSTARS.2026.3716768](https://doi.org/10.1109/JSTARS.2026.37167)
 
-### 3. Scientific Data Data Descriptor
+### 3. ArXiV preprint (submitted to be considered for publication as a Data Descriptor in the Scientific Data journal):
 
-> **Citation pending.** The complete arXiv reference will be inserted here when the preprint is released.
+> E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “A Distributed Acoustic Sensing Dataset for Vessel Detection and Localization in Submarine Cable Protection”. ArXiV Preprint. doi: [...](https://doi.org/...)
 
 ## Licenses
 
