@@ -9,9 +9,9 @@
 
 This repository is the maintained companion software and reproducibility resource for our group research on vessel monitoring using distributed acoustic sensing (DAS) in submarine optical fiber cables. It supports:
 
-- The published IEEE JSTARS article on vessel detection and localization.
+- The accepted IEEE JSTARS article on vessel detection and localization.
 - The submitted *Scientific Data* Data Descriptor presenting the Marlinks-NS DAS dataset.
-- The [Marlinks-NS DAS dataset deposited in Zenodo](https://doi.org/10.5281/zenodo.15611778).
+- The published [Marlinks-NS DAS dataset deposited in Zenodo](https://doi.org/10.5281/zenodo.15611778).
 
 The complete dataset and its definitive documentation are distributed through Zenodo. This repository contains complementary source code, reproducibility workflows, plotting tools, frequency-band definitions, a small demonstration dataset and supplementary resources.
 
