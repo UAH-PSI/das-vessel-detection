@@ -1,6 +1,6 @@
 # Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables
 
-[![JSTARS article](https://img.shields.io/badge/IEEE%20JSTARS-10.1109%2FJSTARS.2026.3716768-00629B)](https://doi.org/10.1109/JSTARS.2026.3716768)
+[![JSTARS article](https://img.shields.io/badge/IEEE%20JSTARS%20%28accepted%29-10.1109%2FJSTARS.2026.3716768-00629B)](https://doi.org/10.1109/JSTARS.2026.3716768)
 [![Dataset](https://img.shields.io/badge/Zenodo-10.5281%2Fzenodo.15611778-1682D4)](https://doi.org/10.5281/zenodo.15611778)
 [![Scientific Data](https://img.shields.io/badge/Scientific%20Data-submitted-orange)](#related-publications)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
