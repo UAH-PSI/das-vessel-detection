@@ -7,7 +7,7 @@
 
 ## Repository purpose
 
-This repository is the maintained companion software and reproducibility resource for our group research on vessel monitoring using distributed acoustic sensing (DAS) in submarine optical fiber cables. It supports:
+This repository is the maintained companion software and reproducibility resource for our research group's work on vessel monitoring using distributed acoustic sensing (DAS) in submarine optical fiber cables. It supports:
 
 - The accepted IEEE JSTARS article on vessel detection and localization.
 - The submitted *Scientific Data* Data Descriptor presenting the Marlinks-NS DAS dataset.
@@ -37,7 +37,7 @@ The complete dataset and its definitive documentation are distributed through Ze
 
 Submarine cables are critical infrastructure for global connectivity, but they are vulnerable to accidental damage and deliberate interference. Conventional vessel-monitoring technologies can be limited by sensing range, weather conditions, revisit times or dependence on vessel cooperation.
 
-This project investigates the use of DAS on a pre-existing ocean-bottom telecommunication cable for continuous maritime monitoring and submarine-cable protection. DAS turns the optical fiber into a dense array of acoustic sensing positions, enabling machine-learning methods to detect nearby vessels and estimate their distance to the cable.
+This project investigates the use of DAS on a pre-existing ocean-bottom telecommunications cable for continuous maritime monitoring and submarine-cable protection. DAS turns the optical fiber into a dense array of acoustic sensing positions, enabling machine-learning methods to detect nearby vessels and estimate their distance to the cable.
 
 The Marlinks-NS measurements were acquired over ten days using a 28 km submarine optical fiber cable. The released dataset contains processed spatial-spectral DAS features from a selected 2,553 m segment, together with timestamps, closest-vessel distance labels and AIS-derived vessel information.
 
@@ -64,12 +64,13 @@ This GitHub repository also retains `data/reduced_dataset_sensor_range_1440_1690
 
 The released HDF5 file contains 74,771 sample-aligned observations:
 
-| Element | Shape | Contents |
-|---|---:|---|
-| `X` | `(74771, 250, 100)` | DAS energy-band features, ordered as `(sample, spatial channel, frequency band)` |
-| `y` | `(74771,)` | Distance in metres to the closest AIS-reported vessel for each observation |
-| `ship_info` | HDF5 group containing three arrays of shape `(74771,)` | AIS-derived vessel type, length and beam associated with each value of `y` |
-| `datetimes` | `(74771,)` | UTC timestamp in ISO 8601 format for each observation |
+| Element     |                                                  Shape | Contents                                                                                            |
+|-------------|-------------------------------------------------------:|-----------------------------------------------------------------------------------------------------|
+| `X`         |                                    `(74771, 250, 100)` | DAS energy-band features, ordered as `(sample, spatial channel, frequency band)`                    |
+| `y`         |                                             `(74771,)` | Distance in meters to the closest AIS-reported vessel for each observation                          |
+| `ship_info` | HDF5 group containing three arrays of shape `(74771,)` | AIS-derived vessel type, length and beam of the closest vessel associated with each observation     |
+| `datetimes` |                                             `(74771,)` | UTC timestamp with format "%Y-%m-%d %H:%M:%S%z" (based on the ISO 8601 format) for each observation |
+|             |                                                        |                                                                                                     |
 
 Thus, each sample consists of one `250 × 100` spatial-spectral feature matrix in `X`, one closest-vessel distance in `y`, the corresponding vessel attributes in `ship_info`, and one timestamp. The observations cover 16–25 June 2023 (UTC) and correspond to non-overlapping 10-second windows over a 2,553 m cable segment. The 100 spectral features are logarithmically spaced energy bands spanning 4–98 Hz, excluding 49–51 Hz.
 
@@ -93,8 +94,8 @@ The main repository resources include:
 | `data/fbands.csv`                                                 | Frequency-band boundaries used for feature extraction               |
 | `data/combined_plot_interval_20230616T155500_20230626T160500.png` | Example visualization generated from the demonstration data         |
 | `requirements.txt`                                                | Python package requirements                                         |
-| `logos/`                                                          | Funding and acknowledgement graphics                                |
-| `LICENSE`                                                         | Licence applying to the repository software                         |
+| `logos/`                                                          | Funding and acknowledgment graphics                                |
+| `LICENSE`                                                         | License applying to the repository software                         |
 
 The repository is the actively maintained location for software updates and extended reproducibility material. The complete released data remain versioned and preserved in Zenodo.
 
@@ -147,7 +148,7 @@ To ensure direct comparability with the associated studies, users are encouraged
 
 ### Generation of a day-wise (k-fold) train/test split
 
-`src/load_and_split_dataset.py` loads `X`, `y`, `datetimes` and, when present, `ship_info`. It reserves all observations from the selected UTC date for testing and uses the remaining dates for training:
+`src/load_and_split_dataset.py` loads `X`, `y`, `datetimes` and, when present, `ship_info`. It reserves all observations from the selected recording day for testing and uses the remaining days for training:
 
 ```bash
 python src/load_and_split_dataset.py \
@@ -185,7 +186,7 @@ The Zenodo `src.zip` archive additionally provides small standalone examples for
 
 ### AI/ML workflows (work in progress)
 
-This section will provide reproducibility scripts for the training and testing procedures carried out in the published material.
+This section will provide reproducibility scripts for the training and testing procedures reported in the associated studies.
 
 
 ## Supplementary material
