@@ -1,326 +1,241 @@
 # Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables
 
-![Dataset](https://img.shields.io/badge/Dataset-Zenodo%20Open%20License-blue)
-![Reproducibility](https://img.shields.io/badge/Reproducible-Work%20In%20Progress-yellow)
-![Publication](https://img.shields.io/badge/Status-In%20Press-blue)
+[![JSTARS article](https://img.shields.io/badge/IEEE%20JSTARS-10.1109%2FJSTARS.2026.3716768-00629B)](https://doi.org/10.1109/JSTARS.2026.3716768)
+[![Dataset](https://img.shields.io/badge/Zenodo-10.5281%2Fzenodo.15611778-1682D4)](https://doi.org/10.5281/zenodo.15611778)
+[![Scientific Data](https://img.shields.io/badge/Scientific%20Data-submitted-orange)](#related-publications)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
-> 📢 **Note:** **The full dataset has been published under an open license in [Zenodo](https://zenodo.org) (see the [data availability section](#data-availability)). For prospective interested researchers we initially provide here a reduced version of the full dataset (10 minutes of the original 10 days processed recordings), to give an idea of the full content.**
+## Repository purpose
 
-This repository accompanies the research on vessel detection and localization using Distributed Acoustic Sensing (DAS) technology applied to submarine telecommunication cables. The project leverages repurposed submarine fiber optic cables as large-scale acoustic sensor arrays to continuously monitor maritime traffic and detect vessels in real time. 
+This repository is the maintained companion software and reproducibility resource for research on vessel monitoring using distributed acoustic sensing (DAS) in submarine optical fiber cables. It supports:
 
-The work is specifically aimed at submarine cable protection applications, in which the detection and localization of nearby vessels is crucial to monitor potential threats to the cable integrity. 
+- the published IEEE JSTARS article on vessel detection and localization;
+- the submitted *Scientific Data* Data Descriptor presenting the Marlinks-NS DAS dataset; and
+- the [Marlinks-NS DAS dataset deposited in Zenodo](https://doi.org/10.5281/zenodo.15611778).
 
-This repository accompanies our research paper on vessel detection and localization using Distributed Acoustic Sensing (DAS) technology applied to submarine telecommunication cables, published in the IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing (see the [How to Cite](#how-to-cite) section below). The project leverages repurposed submarine fiber optic cables as large-scale acoustic sensor arrays to continuously monitor maritime traffic and detect vessels in real time.
+The complete dataset and its definitive documentation are distributed through Zenodo. This repository contains complementary source code, reproducibility workflows, plotting tools, frequency-band definitions, a small demonstration dataset and supplementary resources.
 
-For in-depth details on dataset acquisition, instrumentation, and methodology, please refer to the published manuscript (see the [citation section](#How-to-Cite)).
+## Project summary
 
----
+Submarine cables are critical infrastructure for global connectivity, but they are vulnerable to accidental damage and deliberate interference. Conventional vessel-monitoring technologies can be limited by sensing range, weather conditions, revisit times or dependence on vessel cooperation.
 
-# Table of Contents
+This project investigates the use of DAS on a pre-existing ocean-bottom telecommunication cable for continuous maritime monitoring and submarine-cable protection. DAS turns the optical fiber into a dense array of acoustic sensing positions, enabling machine-learning methods to detect nearby vessels and estimate their distance to the cable.
 
-- [Project Summary](#project-summary)
-- [Dataset Description](#dataset-description)
-- [Database partitioning recommendations](#database-partitioning-recommendations)
-- [Data Loading and Processing](#data-loading-and-processing)
-- [Setup Instructions](#setup-instructions)
-- [How to Cite](#how-to-cite)
-- [Supplementary Material](#supplementary-material)
-- [Funding and Acknowledgements](#funding-and-acknowledgements)
-- [Contact](#contact)
+The Marlinks-NS measurements were acquired over ten days using a 28 km submarine optical fiber cable. The released dataset contains processed spatial-spectral DAS features from a selected 2,553 m segment, together with timestamps, closest-vessel distance labels and AIS-derived vessel information.
 
----
+The original raw DAS recordings, the precise cable route and other sensitive geographical details cannot be released because of data-owner and critical-infrastructure restrictions. Instead, the openly released dataset provides the processed features and metadata needed to reproduce the defined machine-learning tasks. See the Zenodo documentation for the authoritative description of the acquisition, processing, data structure, limitations and permitted use.
 
-# Project Summary
+## Dataset availability
 
-Submarine cables are critical infrastructure for global connectivity but vulnerable to accidental damage or sabotage. Traditional vessel monitoring methods (SAR, video surveillance, satellite imagery) have real-time processing, weather, or range limitations.
+The complete released dataset is available from Zenodo:
 
-This project exploits DAS sensors embedded in submarine cables to detect and localize vessels based on acoustic signals. The system operates continuously, independently of vessel cooperation (e.g., AIS), and performs robustly regardless of environmental conditions.
+> **Marlinks-NS DAS: Dataset for vessel detection and distance estimation using distributed acoustic sensing in submarine optical fiber cables**  
+> [https://doi.org/10.5281/zenodo.15611778](https://doi.org/10.5281/zenodo.15611778)
 
-The dataset corresponds to a continuous ten-day DAS recording campaign, encompassing diverse vessel types, sizes, and speeds, in a 28 km long submarine optical fiber cable. The data selected for this work covers a 2,553 m fiber length segment with 250 spatial sensor channels sampled over time. 
+The Zenodo record is the authoritative source for:
 
-> **Data Sharing Constraints and Our Alternative**
-> Due to the data‐owner’s restrictions, we are unable to publish the original raw differential‐strain recordings nor details on precise geographical localization. Instead, we commit to full transparency and reproducibility by releasing preprocessed feature vectors (energy‐band values over 10 second windows) along with comprehensive labelling metadata (timestamps, distance to nearest vessel, and vessel information) and example code. The GitHub repository also documents the exact data schema, loading routines, and processing steps. The data will be publicly available once the manuscript describing our proposal is, if accepted, formally published (see the [citation section](#How-to-Cite)). Hosting will be done in Zenodo under an open license, ensuring that future researchers can reproduce our results without compromising the owner’s raw data agreements.
+- the complete processed HDF5 dataset;
+- the definitive dataset documentation and file inventory;
+- the HDF5 schema and field descriptions;
+- acquisition, processing and ground-truth generation details;
+- known limitations and usage considerations;
+- dataset licensing and citation metadata; and
+- minimal standalone examples for inspecting, loading, validating and partitioning the data.
 
+This GitHub repository also retains `data/reduced_dataset_sensor_range_1440_1690.h5`, a 10-minute extract containing a representative vessel-crossing event. It is provided only as a lightweight demonstration asset for rapidly testing the repository scripts; it is not an alternative distribution of the complete dataset.
 
----
+## Minimal dataset summary
 
-# Dataset Description
+| Property | Value |
+|---|---|
+| Recording period | 16–25 June 2023 (UTC) |
+| Observation window | 10 s, non-overlapping |
+| Number of observations | 74,771 |
+| Selected cable segment | 2,553 m |
+| Spatial channels | 250 |
+| Spectral features | 100 logarithmically spaced energy bands |
+| Retained frequency range | 4–98 Hz, excluding 49–51 Hz |
+| Main feature array | `X.shape = (74771, 250, 100)` |
+| Regression target | Distance in metres to the closest AIS-reported vessel |
+| Additional information | UTC timestamps and AIS-derived vessel attributes |
 
-## Overview
+Each feature value is obtained by integrating the squared FFT magnitude over its corresponding frequency band. Three noisy spatial channels, with array indices `59`, `60` and `61`, were set to zero in the released feature matrices and should normally be excluded before model training or evaluation.
 
-In the dataset, we have a total of `N_samples` data points recorded along time, in which each data sample corresponds to feature vectors with `N_bands` energy-band values extracted from non-overlapped 10-second windows of the raw DAS strain signals, calculated for all the considered `N_channels` fiber optic sensing positions. The analyzed bandwidth covers an `(f_ini, f_end)` frequency range, excluding selected frequencies (see below). 
+The dataset supports two principal tasks:
 
-In our case, the spectral analysis produces `N_bands=100` logarithmically spaced energy values between 4 Hz and 98 Hz (more details in the [Feature extraction process](feature extraction process section)), for each of the considered `N_channels=250` spatial channels. So, each resulting feature vector for a given timestamp is of shape `(N_channels, N_bands)=(250, 100)`. 
+1. **Vessel detection:** binary classification obtained by applying a stated distance threshold to the continuous target.
+2. **Vessel-to-cable distance estimation:** regression using the continuous closest-vessel distance.
 
-In the 10 days recording period, we finally generated `N_samples=74771` feature vectors, so that the full data is of dimension `(N_samples, N_channels, N_bands)=(74771, 250, 100)`. The analized bandwidth uses `f_ini=4 Hz` and `f_end=98 Hz`, excluding the `(48 Hz, 52 Hz)` range (see the paper for the rationale).
+For the complete and current technical description, refer to the documentation in the [Zenodo record](https://doi.org/10.5281/zenodo.15611778).
 
-The selected format for the dataset files is HDF5. 
+## Repository contents
 
-> **Quick-Start Dataset for Rapid Testing**
->
-> For convenience and quick reproducibility, we provide an aggregate HDF5 file named **`data/reduced_dataset_sensor_range_1440_1690.h5`**.  
-> This file contains a 10-minute extract of the full dataset, including a representative ship crossing event.
-> It is ideal for rapid testing, without requiring the full dataset download.
+The main repository resources include:
 
+| Path | Purpose |
+|---|---|
+| `src/` | Dataset loading, partitioning, plotting and reproducibility scripts |
+| `data/reduced_dataset_sensor_range_1440_1690.h5` | Ten-minute demonstration extract |
+| `data/fbands.csv` | Frequency-band boundaries used for feature extraction |
+| `data/combined_plot_interval_20230616T155500_20230626T160500.png` | Example visualization generated from the demonstration data |
+| `requirements.txt` | Python package requirements |
+| `logos/` | Funding and acknowledgement graphics |
+| `LICENSE` | Licence applying to the repository software |
 
-## Key dataset components
+The repository is the actively maintained location for software updates and extended reproducibility material. The complete released data remain versioned and preserved in Zenodo.
 
-- `X`: A 3D NumPy array of shape `(N_samples, N_channels, N_bands)`.
+## Installation
 
-  - **`N_samples=74771`**: number of non-overlapped 10-seconds signal windows analyzed along the full recording period.
-  - **`N_channels=250`**: number of spatial channels (sensor positions along the selected fiber segment).
-  - **`N_bands=100`**: number of energy-band features per channel, computed by dividing the `(f_ini,f_end)` bandwidth into 100 logarithmically spaced frequency bands and integrating power over each band in a 10-second window.
-- `y`: A 1D NumPy array of shape `(N_samples,)` containing the distance (in meters) to the closest vessel during each 10-second window. This continuous variable supports regression tasks directly, or can be converted into classification labels by applying user-defined distance thresholds. 
-- `datetimes`: An array of strings in the HDF5 file that records the UTC timestamp  (ISO-8601 format) corresponding to each 10-second window, with shape `(N_samples,)`.
-- `ship_info`: A group in the HDF5 containing AIS metadata (vessel type, length, beam) of the vessel used to generate `y` label.
+Clone the repository and create an isolated environment:
 
-> **Note on Noisy Sensors**
->
-> Three sensors (indices 59, 60, and 61 in the 'X' array) consistently exhibited high noise levels and have been forced to zero in the raw data. We recommend excluding these channels from feature matrices prior to training classification or regression models.
+```bash
+git clone https://github.com/UAH-PSI/das-vessel-detection.git
+cd das-vessel-detection
 
-
-## Feature extraction processes
-
-This section provides details on the processing from differential strain phase raw DAS to `(N_samples, N_channels, N_bands)` feature vectors. The feature generation process decisions are guided in a purely data driven approach (see the manuscript for details), where the main processing steps are: 
-
-1. **Continuous DAS recording (raw signals):**
-
-   - A differential strain phase-measuring interrogator (Alcatel OptoDAS, located in an off-shore platform) recorded differential phase at a sampling frequency of `f_s=3125 Hz` from a pre-existing ocean-bottom optical fiber cable, configured with `L=10.21 m` gauge length, yielding 2774 raw spatial channels along the 28 km of fiber.
-   - For our experiments, a contiguous 2553-meter fiber segment was selected, corresponding to `N_channels=250` spatial channels (each of them \~10.21 m apart), located between 14707 and 17260 meters from the interrogator.
-
-2. **Windowing into 10-second frames:**
-
-   - The raw differential strain phase DAS time series on each channel was converted to absolute strain and partitioned into non-overlapping 10-second windows. At the used `f_s`, each 10-seconds window contains 31250 time samples per channel.
-
-3. **Spectral feature extraction (`N_bands=100` energy bands):**
-
-   - For each 10-seconds window and for each of the `N_channels` channels, the power spectral density (PSD) between `f_ini=4 Hz` and `f_end=98 Hz` was computed, using a FFT analysis with `N_FFT=31250` FFT samples, and excluding the `(48 Hz, 52 Hz)` frequency range (see the paper for details).
-   - That spectral range was split into **`N_bands=100`** logarithmically spaced frequency bands. The total power in each band was integrated to produce one energy value per band. File [fbands.csv](https://github.com/UAH-PSI/das-vessel-detection/blob/main/data/fbands.csv) contains the frequency band limits for reference purposes.
-   - The final result for each 10-second long signal window is a `(N_channels, N_bands)=(250, 100) “energy-band” matrix.
-
-
-## Ground truth labeling generation processes
-
-The dataset provides ground truth labels related to the distance from the fiber to the closest vessel. This involves two processes: 
-
-1. AIS data interpolation and time alignment
-
-   The original AIS positions provided by the data owner were interpolated at a reporting period of 1 second to improve the spatial and temporal resolution, aligning each vessel’s location with the timestamp corresponding to the middle point of each 10-seconds DAS window (which is stored in the `datetimes` array).
-
-2. Computing closest-vessel distance using AIS data:
-
-   For every timestamped window, we calculate the Euclidean distance from the cable to each AIS reported vessel, then take the minimum distance as the “closest‐vessel distance”. This continuous value (in meters) is stored in the `y` array for that timestamp.
-
-
-## Data packaging into HDF5
-
-   - All processed windows produce `N_samples` feature matrices of shape `(N_channels, N_bands)`, stacked into `X`.
-   - Corresponding labels go into `y`, and UTC timestamps into `datetimes`.
-   - Optionally, the raw AIS metadata (vessel type, length, beam) are stored under `ship_info`.
-
-By framing each 10-seconds interval as a `(N_channels, N_bands)` energy-band snapshot, this dataset enables machine-learning models to learn vessel detection and distance-estimation based on both spatial patterns (across neighboring fiber channels), temporal patterns (across neighboring timestamps) and spectral content.
-
-
-## Data availability
-
-> 📢 **Note:** The link to the Zenodo page hosting the dataset will be available upon formal publication of the paper describing this work (if accepted)
-
-The dataset used in our work is available at Zenodo at the [Marlinks-NS DAS dataset page](https://doi.org/10.5281/zenodo.15611778). 
-
-
----
-
-# Database Partitioning Recommendations
-
-To rigorously evaluate our vessel‐detection and localization models while avoiding temporal leakage, we partitioned the 10-day Marlinks-NS dataset using a day-wise, 10-fold cross-validation scheme.  Each of the 10 folds corresponds to one full day of DAS + AIS recordings.  For each iteration, models were trained on the nine other days and tested on the held-out day, ensuring no temporally adjacent samples span both training and testing sets.  This approach preserves within-fold temporal continuity, injects greater variability into training, and yields a more reliable estimate of generalization performance.  Notably, only 11 vessels (out of 565 total) appear in more than half of the folds, underscoring the dataset’s challenge and the robustness of our partitioning strategy.
-
-
----
-
-# Data Loading and Processing
-
-Data loading is handled via a Python script (`load_and_split_dataset.py`) that performs the following tasks:
-
-1. Open the HDF5 file in read-only mode using `h5py`.
-2. Extract arrays `X`, `y`, and `datetimes`.
-3. Convert `datetimes` from byte strings to UTF-8 and then to pandas `Timestamp` objects.
-4. Use an ISO 8601 datetime cutoff string to split the dataset temporally into training and testing sets, facilitating k-fold or temporal cross-validation.
-5. Optionally load `ship_info` if available.
-
-An example snippet loading the dataset follows:
-
-```python
-import h5py
-import numpy as np
-import pandas as pd
-
-def load_dataset(hdf5_path, datetime_cutoff=None):
-    with h5py.File(hdf5_path, 'r') as f:
-        X = f['X'][:]  # Shape: (N_samples, 250, 100)
-        y = f['y'][:]
-        datetimes_bytes = f['datetimes'][:]
-        datetimes_str = [dt.decode('utf-8') for dt in datetimes_bytes]
-        datetimes = pd.to_datetime(datetimes_str)
-        
-        ship_info = f.get('ship_info')
-        if ship_info is not None:
-            ship_info = {key: ship_info[key][:] for key in ship_info.keys()}
-    
-    if datetime_cutoff is not None:
-        cutoff = pd.to_datetime(datetime_cutoff)
-        train_mask = datetimes <= cutoff
-        test_mask = datetimes > cutoff
-        
-        X_train, y_train = X[train_mask], y[train_mask]
-        X_test, y_test = X[test_mask], y[test_mask]
-    else:
-        X_train = X_test = y_train = y_test = None
-    
-    return {
-        'X': X,
-        'y': y,
-        'datetimes': datetimes,
-        'ship_info': ship_info,
-        'X_train': X_train,
-        'y_train': y_train,
-        'X_test': X_test,
-        'y_test': y_test,
-    }
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 ```
 
----
-
-# Setup Instructions
-
-To work with this project and load the dataset, follow these detailed setup steps:
-
-## Prerequisites
-
-- Python 3.8 or higher is recommended.
-- `pip` package manager installed.
-
-## Create a Python Virtual Environment (Highly Recommended)
-
-On Windows (PowerShell):
+On Windows PowerShell, activate the environment with:
 
 ```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
+.\.venv\Scripts\Activate.ps1
 ```
 
-On Linux/macOS:
+## Usage and reproducibility workflows
+
+### Generate a day-wise train/test split
+
+`src/load_and_split_dataset.py` loads `X`, `y`, `datetimes` and, when present, `ship_info`. It reserves all observations from the selected UTC date for testing and uses the remaining dates for training:
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate
+python src/load_and_split_dataset.py \
+  --h5_path /path/to/dataset_sensor_range_1440_1690_0.h5 \
+  --test_date 2023-06-16 \
+  --output_dir ./splits/
 ```
 
-## Upgrade pip (Optional but Recommended)
+The output directory contains:
+
+- `X_train.npy` and `X_test.npy`;
+- `y_train.npy` and `y_test.npy`;
+- `datetimes_train.npy` and `datetimes_test.npy`; and
+- when available, `ship_info_train.npz` and `ship_info_test.npz`.
+
+Use the HDF5 file downloaded from Zenodo for complete experiments. The smaller HDF5 file in `data/` can be used to verify the workflow quickly.
+
+### Plot energy features and vessel distance
+
+`src/plot_energy_distance.py` generates a combined visualization of the energy-band features and vessel-distance labels. For example:
 
 ```bash
-pip install --upgrade pip
+python src/plot_energy_distance.py \
+  --h5 data/reduced_dataset_sensor_range_1440_1690.h5 \
+  --time_interval 2023-06-16T15:55:00+00:00 2023-06-16T16:05:00+00:00 \
+  --save_dir data \
+  --remove_channels 59 60 61
 ```
 
-## Install Required Python Packages
+Example output:
 
-```bash
-pip install -r requirements.txt
+![Energy-band features and closest-vessel distance](data/combined_plot_interval_20230616T155500_20230626T160500.png)
+
+The Zenodo `src.zip` archive additionally provides small standalone examples for inspecting the HDF5 structure, loading all data or selected slices, checking consistency between full and sliced loading, and generating day-wise partitions.
+
+## Data partitioning recommendation
+
+The observations form a continuous time series and are temporally correlated. Randomly assigning individual 10-second windows to training and test sets can therefore cause temporal leakage and produce overly optimistic performance estimates.
+
+We recommend the day-wise 10-fold cross-validation scheme used in the associated studies:
+
+- each fold contains one complete recording day;
+- models are trained on the other nine days; and
+- the held-out day is used exclusively for testing.
+
+The ten folds correspond to:
+
+```text
+2023-06-16
+2023-06-17
+2023-06-18
+2023-06-19
+2023-06-20
+2023-06-21
+2023-06-22
+2023-06-23
+2023-06-24
+2023-06-25
 ```
 
-## Run the Data Loading Script
+Alternative partitions should preserve temporal separation between training and evaluation data, and the partitioning procedure should be reported explicitly.
 
-Ensure the HDF5 dataset file path is correctly specified and accessible. Use the provided `load_and_split_dataset.py` script or the `load_dataset()` function example above to load and split the dataset temporally.
+## Supplementary material
 
-The `load_and_split_dataset.py` script loads an HDF5 file containing `X`, `y`, and `datetimes`, then splits them into training and testing sets based on a specified ISO date. All samples whose timestamp (UTC) falls on the given date are reserved for testing; the rest become the training set. Results are saved as NumPy arrays in the chosen output directory.
+The [project supplementary website](https://geintra-uah.org/psi/index.html) provides additional material supporting the JSTARS study, including visual demonstrations of the method under different conditions.
 
-The relevant command line options are:
+## Related publications
 
-- `--h5_path`: Path to your HDF5 dataset (e.g., `dataset_sensor_range_1440_1690.h5`).
+### IEEE JSTARS article
 
-- `--test_date`: UTC ISO‐formatted date (`YYYY-MM-DD`) marking which samples to hold out for testing.
+E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro-Perez, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables,” *IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing*, 2026.  
+[https://doi.org/10.1109/JSTARS.2026.3716768](https://doi.org/10.1109/JSTARS.2026.3716768)
 
-- `--output_dir`: Directory where the script will save:
+### Scientific Data Data Descriptor
 
-  - `X_train.npy`, `X_test.npy`
-  - `y_train.npy`, `y_test.npy`
-  - `datetimes_train.npy`, `datetimes_test.npy`
-  - `*Optional*` `ship_info_train.npz`, `ship_info_test.npz` if `ship_info` is present.
+E. E. Ramirez-Torres et al., “Marlinks-NS DAS: Dataset for vessel detection and distance estimation using distributed acoustic sensing in submarine optical fiber cables,” submitted to *Scientific Data*, 2026.
 
-This is an example of how to run the script:
+> **Preprint pending:** the arXiv citation, identifier and link will be added here as soon as the preprint is available.
 
-```bash
-python src/load_and_split_dataset.py --h5_path /path/to/dataset_sensor_range_1440_1690.h5 --test_date 2023-06-16 --output_dir ./splits/
-```
+## How to cite
 
-After running the command above, you should see an output similar to:
+If you use the dataset, repository software, methodology, experimental results or associated supplementary resources, please cite **both companion publications and the Zenodo dataset**. The three references document complementary aspects of the work: the machine-learning methodology and experiments, the dataset design and validation, and the specific released dataset.
 
-```
-Loaded data: X.shape = (N, 250, 100), y.shape = (N,), datetimes.shape = (N,)
-Splitting data: M training samples, K testing samples.
-Train/test splits saved in directory: ./splits/
-```
+Until the *Scientific Data* preprint is available, please cite the JSTARS article and the Zenodo dataset below. The third citation will be added as soon as its arXiv record is available.
 
-Adjust `--h5_path`, `--test_date`, and `--output_dir` as needed for your workflow.
+### 1. IEEE JSTARS article
 
----
+> E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro-Perez, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables,” *IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing*, 2026. https://doi.org/10.1109/JSTARS.2026.3716768
 
-## Example Plotting Script and Output Figure
+### 2. Scientific Data Data Descriptor
 
-A companion script for visualizing feature and distance data is provided at:
+> **Citation pending.** The complete arXiv reference will be inserted here when the preprint is released.
 
-- [`/src/plot_energy_distance.py`](src/plot_energy_distance.py)
+### 3. Zenodo dataset
 
-This script can be used to generate combined energy-band and vessel-distance diagrams directly from the reduced HDF5 dataset.  
-You can quickly produce a figure with a command such as:
+> E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro-Perez, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, M. R. Fernández-Ruiz, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Marlinks-NS DAS: Dataset for vessel detection and distance estimation using distributed acoustic sensing in submarine optical fiber cables,” Zenodo. https://doi.org/10.5281/zenodo.15611778
 
-```bash
-python src/plot_energy_distance.py --h5 /data/reduced_dataset_sensor_range_1440_1690.h5  --time_interval 2023-06-16T15:55:00+00:00 2023-06-26T16:05:00+00:00  --save_dir /data --remove_channels 59 60 61
-```
+## Licences
 
-The example below shows the resulting plot, created from the provided 10-minute reduced dataset:
+The components are distributed under separate licences:
 
-![Energy and Distance Combined Plot](./data/combined_plot_interval_20230616T155500_20230626T160500.png)
+- **Repository software:** [GNU General Public License v3.0](LICENSE), as specified in the repository `LICENSE` file.
+- **Zenodo dataset:** [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/), as specified in the Zenodo record.
+- **Publications:** the licence stated by the corresponding publisher or preprint platform.
 
+The demonstration HDF5 extract in this repository is data rather than software and is covered by the dataset licence. Users should consult the applicable licence files and records before redistribution or reuse.
 
-E. E. Ramirez-Torres et al., "Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables," in , doi: 10.1109/JSTARS.2026.3716768.
+## Funding and acknowledgements
 
-# How to Cite
+This work was partially supported by:
 
-If you use these data or code in your work, please cite the following references:
+- the Spanish Ministry of Science and Innovation, MCIN/AEI/10.13039/501100011033, and the European Union NextGenerationEU/PRTR programme under grants PSI (PLEC2021-007875), REMO (CPP2021-008869), NeurEYE-UAH (PID2024-156576OB-C31), SEASNAKE+ (PCI2023-145978-2, from the CETPartnership 2022 joint call), MOTION (PID2022-140963OA-I00) and EYEFUL-UAH (PID2020-113118RB-C31);
+- the European Innovation Council under grants SAFE (101098992), SUBMERSE (101095055) and ECSTATIC (101189595);
+- the European Research Council under grant SENSE (101218803);
+- the University of Alcalá Research Programme through the FPI-2021 grant supporting P. J. Vidal-Moreno; and
+- MCIN/AEI/10.13039/501100011033 and the European Union NextGenerationEU/PRTR under grant RYC2021-032167-I, supporting M. R. Fernández-Ruiz.
 
-> **Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables**
-> Erick Eduardo Ramirez-Torres, Javier Macias-Guarasa, Daniel Pizarro-Perez, Javier Tejedor, Sira Elena Palazuelos-Cagigas, Pedro J. Vidal-Moreno, Sonia Martin-Lopez, Miguel Gonzalez-Herraez, Roel Vanthillo.
-> IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing, 2026 (accepted for publication).
-> 
-> DOI: https://doi.org/10.1109/JSTARS.2026.3716768 
+The authors acknowledge the computing resources provided by Artemisa, funded by the European Union ERDF and Comunitat Valenciana, and the technical support provided by the Instituto de Física Corpuscular, IFIC (CSIC–University of Valencia).
 
-
-> **Marlinks-NS DAS Dataset: Dataset for Vessel Detection and Distance Estimation Using Distributed Acoustic Sensing in Submarine Cables**
-> Erick Eduardo Ramirez-Torres, Javier Macias-Guarasa, Daniel Pizarro-Perez, Javier Tejedor, Sira Elena Palazuelos-Cagigas, Pedro J. Vidal-Moreno, Marı́a R. Fernández-Ruiz, Sonia Martin-Lopez, Miguel Gonzalez-Herraez, Roel Vanthillo.
->  Dataset on Zenodo. 
->
->  DOI: https://doi.org/10.5281/zenodo.15611778
-
-
----
-
-# Supplementary Material
-
-We have generated an additional [web page with supplementary material](https://geintra-uah.org/psi/index.html), which provides additional information on the paper proposal, incluiding some videos demonstrating the behaviour of the algorithm under different conditions. It is available at [https://geintra-uah.org/psi/index.html](https://geintra-uah.org/psi/index.html).
-
----
-
-# Funding and Acknowledgements
-
-This work has been partially supported by the Spanish Ministry of Science and Innovation MCIN/AEI/10.13039/501100011033 and by the European Union NextGenerationEU/PRTR program under grants PSI (PLEC2021-007875), REMO (CPP2021-008869) and EYEFUL-UAH (PID2020-113118RB-C31); by FEDER Una manera de hacer Europa under grant PRECISION (PID2021-128000OBC21); by the European Innovation Council under grants SAFE (101098992) and grant SUBMERSE (101095055).
-    
-P.J.V-M was supported by FPI-2021 Grant from the University of Alcalá Research Program.
-
-We gratefully acknowledge the computer resources at Artemisa, funded by the European Union ERDF and Comunitat Valenciana as well as the technical support provided by the Instituto de Fisica Corpuscular, IFIC (CSIC-UV).
-  
 ![Funding sources](logos/funding-logos.png)
 
+## Contact and issue reporting
 
-# Contact
+For scientific questions about the dataset or the associated studies, contact:
 
-If you have further questions or require additional assistance, please contact the corresponding author via email at [javier.maciasguarasa@uah.es](mailto:javier.maciasguarasa@uah.es).
+**Javier Macias-Guarasa**  
+Universidad de Alcalá  
+[javier.maciasguarasa@uah.es](mailto:javier.maciasguarasa@uah.es)
+
+For reproducibility problems, software defects or feature requests, please use the repository [issue tracker](https://github.com/UAH-PSI/das-vessel-detection/issues). When reporting a problem, include the command executed, relevant input and output paths, the observed error and enough environment information to reproduce it.
