@@ -181,7 +181,7 @@ python src/plot_energy_distance.py \
 
 Example output:
 
-![Energy-band features and closest-vessel distance](data/combined_plot_interval_20230616T155500_20230626T160500.png)
+![Energy-band features and closest-vessel distance](data/combined_plot_interval_20230616T155500_20230616T160500.png)
 
 The Zenodo `src.zip` archive additionally provides small standalone examples for inspecting the HDF5 structure, loading all data or selected slices, checking consistency between full and sliced loading, and generating day-wise partitions.
 
