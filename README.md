@@ -1,19 +1,37 @@
 # Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables
 
-[![JSTARS article](https://img.shields.io/badge/IEEE%20JSTARS-10.1109%2FJSTARS.2026.3716768-00629B)](https://doi.org/10.1109/JSTARS.2026.3716768)
+[![JSTARS article](https://img.shields.io/badge/IEEE%20JSTARS (accepted)-10.1109%2FJSTARS.2026.3716768-00629B)](https://doi.org/10.1109/JSTARS.2026.3716768)
 [![Dataset](https://img.shields.io/badge/Zenodo-10.5281%2Fzenodo.15611778-1682D4)](https://doi.org/10.5281/zenodo.15611778)
 [![Scientific Data](https://img.shields.io/badge/Scientific%20Data-submitted-orange)](#related-publications)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
 ## Repository purpose
 
-This repository is the maintained companion software and reproducibility resource for research on vessel monitoring using distributed acoustic sensing (DAS) in submarine optical fiber cables. It supports:
+This repository is the maintained companion software and reproducibility resource for our group research on vessel monitoring using distributed acoustic sensing (DAS) in submarine optical fiber cables. It supports:
 
-- the published IEEE JSTARS article on vessel detection and localization;
-- the submitted *Scientific Data* Data Descriptor presenting the Marlinks-NS DAS dataset; and
-- the [Marlinks-NS DAS dataset deposited in Zenodo](https://doi.org/10.5281/zenodo.15611778).
+- The published IEEE JSTARS article on vessel detection and localization.
+- The submitted *Scientific Data* Data Descriptor presenting the Marlinks-NS DAS dataset.
+- The [Marlinks-NS DAS dataset deposited in Zenodo](https://doi.org/10.5281/zenodo.15611778).
 
 The complete dataset and its definitive documentation are distributed through Zenodo. This repository contains complementary source code, reproducibility workflows, plotting tools, frequency-band definitions, a small demonstration dataset and supplementary resources.
+
+## Table of contents
+
+- [Project summary](#project-summary)
+- [Dataset availability](#dataset-availability)
+- [Repository contents](#repository-contents)
+- [Usage and reproducibility workflows](#usage-and-reproducibility-workflows)
+  - [Installation](#installation)
+  - [Data partitioning recommendation](#data-partitioning-recommendation)
+  - [Generation of a day-wise k-fold train-test split](#generation-of-a-day-wise-(k-fold)-train/test-split)
+  - [Plot energy features and vessel distance](#plot-energy-features-and-vessel-distance)
+  - [AI/ML workflows (work in progress)](#AI/ML-workflows-work-in-progress)
+- [Supplementary material](#supplementary-material)
+- [Related publications](#related-publications)
+- [How to cite](#how-to-cite)
+- [Licences](#licences)
+- [Funding and acknowledgements](#funding-and-acknowledgements)
+- [Contact and issue reporting](#contact-and-issue-reporting)
 
 ## Project summary
 
@@ -44,20 +62,16 @@ The Zenodo record is the authoritative source for:
 
 This GitHub repository also retains `data/reduced_dataset_sensor_range_1440_1690.h5`, a 10-minute extract containing a representative vessel-crossing event. It is provided only as a lightweight demonstration asset for rapidly testing the repository scripts; it is not an alternative distribution of the complete dataset.
 
-## Minimal dataset summary
+The released HDF5 file contains 74,771 sample-aligned observations:
 
-| Property | Value |
-|---|---|
-| Recording period | 16–25 June 2023 (UTC) |
-| Observation window | 10 s, non-overlapping |
-| Number of observations | 74,771 |
-| Selected cable segment | 2,553 m |
-| Spatial channels | 250 |
-| Spectral features | 100 logarithmically spaced energy bands |
-| Retained frequency range | 4–98 Hz, excluding 49–51 Hz |
-| Main feature array | `X.shape = (74771, 250, 100)` |
-| Regression target | Distance in metres to the closest AIS-reported vessel |
-| Additional information | UTC timestamps and AIS-derived vessel attributes |
+| Element | Shape | Contents |
+|---|---:|---|
+| `X` | `(74771, 250, 100)` | DAS energy-band features, ordered as `(sample, spatial channel, frequency band)` |
+| `y` | `(74771,)` | Distance in metres to the closest AIS-reported vessel for each observation |
+| `ship_info` | HDF5 group containing three arrays of shape `(74771,)` | AIS-derived vessel type, length and beam associated with each value of `y` |
+| `datetimes` | `(74771,)` | UTC timestamp in ISO 8601 format for each observation |
+
+Thus, each sample consists of one `250 × 100` spatial-spectral feature matrix in `X`, one closest-vessel distance in `y`, the corresponding vessel attributes in `ship_info`, and one timestamp. The observations cover 16–25 June 2023 (UTC) and correspond to non-overlapping 10-second windows over a 2,553 m cable segment. The 100 spectral features are logarithmically spaced energy bands spanning 4–98 Hz, excluding 49–51 Hz.
 
 Each feature value is obtained by integrating the squared FFT magnitude over its corresponding frequency band. Three noisy spatial channels, with array indices `59`, `60` and `61`, were set to zero in the released feature matrices and should normally be excluded before model training or evaluation.
 
@@ -72,19 +86,22 @@ For the complete and current technical description, refer to the documentation i
 
 The main repository resources include:
 
-| Path | Purpose |
-|---|---|
-| `src/` | Dataset loading, partitioning, plotting and reproducibility scripts |
-| `data/reduced_dataset_sensor_range_1440_1690.h5` | Ten-minute demonstration extract |
-| `data/fbands.csv` | Frequency-band boundaries used for feature extraction |
-| `data/combined_plot_interval_20230616T155500_20230626T160500.png` | Example visualization generated from the demonstration data |
-| `requirements.txt` | Python package requirements |
-| `logos/` | Funding and acknowledgement graphics |
-| `LICENSE` | Licence applying to the repository software |
+| Path                                                              | Purpose                                                             |
+|-------------------------------------------------------------------|---------------------------------------------------------------------|
+| `src/`                                                            | Dataset loading, partitioning, plotting and reproducibility scripts |
+| `data/reduced_dataset_sensor_range_1440_1690.h5`                  | Ten-minute demonstration extract                                    |
+| `data/fbands.csv`                                                 | Frequency-band boundaries used for feature extraction               |
+| `data/combined_plot_interval_20230616T155500_20230626T160500.png` | Example visualization generated from the demonstration data         |
+| `requirements.txt`                                                | Python package requirements                                         |
+| `logos/`                                                          | Funding and acknowledgement graphics                                |
+| `LICENSE`                                                         | Licence applying to the repository software                         |
 
 The repository is the actively maintained location for software updates and extended reproducibility material. The complete released data remain versioned and preserved in Zenodo.
 
-## Installation
+
+## Usage and reproducibility workflows
+
+### Installation
 
 Clone the repository and create an isolated environment:
 
@@ -95,7 +112,7 @@ cd das-vessel-detection
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+python -m pip install -r src/requirements.txt
 ```
 
 On Windows PowerShell, activate the environment with:
@@ -104,9 +121,31 @@ On Windows PowerShell, activate the environment with:
 .\.venv\Scripts\Activate.ps1
 ```
 
-## Usage and reproducibility workflows
+### Data partitioning recommendation
 
-### Generate a day-wise train/test split
+The observations form a continuous time series and are temporally correlated. Randomly assigning individual 10-second windows to training and test sets can therefore cause temporal leakage and produce overly optimistic performance estimates.
+
+The reproducibility workflows follow the day-wise 10-fold cross-validation strategy adopted in the associated studies. Each of the ten recording days defines one fold: in each cross-validation iteration, all observations from one complete day are held out for testing, while observations from the remaining nine days are used for model development. If a separate validation set is required, it should also be defined using temporally separated observations, preferably by holding out one or more complete training days.
+
+The ten folds correspond to the dataset recording days:
+
+```text
+2023-06-16
+2023-06-17
+2023-06-18
+2023-06-19
+2023-06-20
+2023-06-21
+2023-06-22
+2023-06-23
+2023-06-24
+2023-06-25
+```
+
+To ensure direct comparability with the associated studies, users are encouraged to retain the proposed day-wise partitioning strategy. If an alternative partitioning approach is adopted, it should preserve temporal separation between training and evaluation data, minimize temporal leakage, and be reported explicitly.
+
+
+### Generation of a day-wise (k-fold) train/test split
 
 `src/load_and_split_dataset.py` loads `X`, `y`, `datetimes` and, when present, `ship_info`. It reserves all observations from the selected UTC date for testing and uses the remaining dates for training:
 
@@ -119,12 +158,12 @@ python src/load_and_split_dataset.py \
 
 The output directory contains:
 
-- `X_train.npy` and `X_test.npy`;
-- `y_train.npy` and `y_test.npy`;
-- `datetimes_train.npy` and `datetimes_test.npy`; and
-- when available, `ship_info_train.npz` and `ship_info_test.npz`.
+- `X_train.npy` and `X_test.npy`.
+- `y_train.npy` and `y_test.npy`.
+- `datetimes_train.npy` and `datetimes_test.npy`.
+- When available, `ship_info_train.npz` and `ship_info_test.npz`.
 
-Use the HDF5 file downloaded from Zenodo for complete experiments. The smaller HDF5 file in `data/` can be used to verify the workflow quickly.
+Use the HDF5 file downloaded from Zenodo for complete experiments. 
 
 ### Plot energy features and vessel distance
 
@@ -144,36 +183,15 @@ Example output:
 
 The Zenodo `src.zip` archive additionally provides small standalone examples for inspecting the HDF5 structure, loading all data or selected slices, checking consistency between full and sliced loading, and generating day-wise partitions.
 
-## Data partitioning recommendation
+### AI/ML workflows (work in progress)
 
-The observations form a continuous time series and are temporally correlated. Randomly assigning individual 10-second windows to training and test sets can therefore cause temporal leakage and produce overly optimistic performance estimates.
+This section will provide reproducibility scripts for the training and testing procedures carried out in the published material.
 
-We recommend the day-wise 10-fold cross-validation scheme used in the associated studies:
-
-- each fold contains one complete recording day;
-- models are trained on the other nine days; and
-- the held-out day is used exclusively for testing.
-
-The ten folds correspond to:
-
-```text
-2023-06-16
-2023-06-17
-2023-06-18
-2023-06-19
-2023-06-20
-2023-06-21
-2023-06-22
-2023-06-23
-2023-06-24
-2023-06-25
-```
-
-Alternative partitions should preserve temporal separation between training and evaluation data, and the partitioning procedure should be reported explicitly.
 
 ## Supplementary material
 
 The [project supplementary website](https://geintra-uah.org/psi/index.html) provides additional material supporting the JSTARS study, including visual demonstrations of the method under different conditions.
+
 
 ## Related publications
 
@@ -192,7 +210,7 @@ E. E. Ramirez-Torres et al., “Marlinks-NS DAS: Dataset for vessel detection an
 
 If you use the dataset, repository software, methodology, experimental results or associated supplementary resources, please cite **both companion publications and the Zenodo dataset**. The three references document complementary aspects of the work: the machine-learning methodology and experiments, the dataset design and validation, and the specific released dataset.
 
-Until the *Scientific Data* preprint is available, please cite the JSTARS article and the Zenodo dataset below. The third citation will be added as soon as its arXiv record is available.
+Until the *Scientific Data* preprint is available, please cite the JSTARS article and the Zenodo dataset below. The third citation will be added as soon as its arXiv record is available (or the Data Descriptor paper is eventually published).
 
 ### 1. IEEE JSTARS article
 
@@ -216,14 +234,15 @@ The components are distributed under separate licences:
 
 The demonstration HDF5 extract in this repository is data rather than software and is covered by the dataset licence. Users should consult the applicable licence files and records before redistribution or reuse.
 
+
 ## Funding and acknowledgements
 
 This work was partially supported by:
 
-- the Spanish Ministry of Science and Innovation, MCIN/AEI/10.13039/501100011033, and the European Union NextGenerationEU/PRTR programme under grants PSI (PLEC2021-007875), REMO (CPP2021-008869), NeurEYE-UAH (PID2024-156576OB-C31), SEASNAKE+ (PCI2023-145978-2, from the CETPartnership 2022 joint call), MOTION (PID2022-140963OA-I00) and EYEFUL-UAH (PID2020-113118RB-C31);
-- the European Innovation Council under grants SAFE (101098992), SUBMERSE (101095055) and ECSTATIC (101189595);
-- the European Research Council under grant SENSE (101218803);
-- the University of Alcalá Research Programme through the FPI-2021 grant supporting P. J. Vidal-Moreno; and
+- The Spanish Ministry of Science and Innovation, MCIN/AEI/10.13039/501100011033, and the European Union NextGenerationEU/PRTR programme under grants PSI (PLEC2021-007875), REMO (CPP2021-008869), NeurEYE-UAH (PID2024-156576OB-C31), SEASNAKE+ (PCI2023-145978-2, from the CETPartnership 2022 joint call), MOTION (PID2022-140963OA-I00) and EYEFUL-UAH (PID2020-113118RB-C31).
+- The European Innovation Council under grants SAFE (101098992), SUBMERSE (101095055) and ECSTATIC (101189595).
+- The European Research Council under grant SENSE (101218803).
+- The University of Alcalá Research Programme through the FPI-2021 grant supporting P. J. Vidal-Moreno.
 - MCIN/AEI/10.13039/501100011033 and the European Union NextGenerationEU/PRTR under grant RYC2021-032167-I, supporting M. R. Fernández-Ruiz.
 
 The authors acknowledge the computing resources provided by Artemisa, funded by the European Union ERDF and Comunitat Valenciana, and the technical support provided by the Instituto de Física Corpuscular, IFIC (CSIC–University of Valencia).
@@ -238,4 +257,11 @@ For scientific questions about the dataset or the associated studies, contact:
 Universidad de Alcalá  
 [javier.maciasguarasa@uah.es](mailto:javier.maciasguarasa@uah.es)
 
-For reproducibility problems, software defects or feature requests, please use the repository [issue tracker](https://github.com/UAH-PSI/das-vessel-detection/issues). When reporting a problem, include the command executed, relevant input and output paths, the observed error and enough environment information to reproduce it.
+For source code contributions or feature requests, please use the repository [issue tracker](https://github.com/UAH-PSI/das-vessel-detection/issues). When reporting a problem, include the command executed, relevant input and output paths, the observed error and enough environment information to reproduce it.
+
+
+<!-- Local Variables: -->
+<!-- mode: markdown -->
+<!-- ispell-local-dictionary: "en_US" -->
+<!-- End: -->
+
