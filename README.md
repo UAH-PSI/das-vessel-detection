@@ -1,16 +1,18 @@
 # Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables
 
 ![Dataset](https://img.shields.io/badge/Dataset-Zenodo%20Open%20License-blue)
-![Reproducibility](https://img.shields.io/badge/Reproducible-Under%20Review-yellow)
-![Publication](https://img.shields.io/badge/Status-Under%20Review-yellow)
+![Reproducibility](https://img.shields.io/badge/Reproducible-Work%20In%20Progress-yellow)
+![Publication](https://img.shields.io/badge/Status-In%20Press-blue)
 
-> 📢 **Note:** **Upon formal publication of the paper describing this work (if accepted), the full dataset will be published under an open license in [Zenodo](https://zenodo.org), and this repository will be updated to its final form, including full processing scripts. This release will enable other researchers to fully reproduce our machine-learning experiments, compare new algorithms, and extend vessel-detection efforts in other submarine-cable contexts. For interested researchers we initially provide here a reduced version of the full dataset (10 minutes of the original 10 days processed recordings), to give an idea of the expected full content.**
+> 📢 **Note:** **The full dataset has been published under an open license in [Zenodo](https://zenodo.org) (see the [data availability section](#data-availability)). For prospective interested researchers we initially provide here a reduced version of the full dataset (10 minutes of the original 10 days processed recordings), to give an idea of the full content.**
 
 This repository accompanies the research on vessel detection and localization using Distributed Acoustic Sensing (DAS) technology applied to submarine telecommunication cables. The project leverages repurposed submarine fiber optic cables as large-scale acoustic sensor arrays to continuously monitor maritime traffic and detect vessels in real time. 
 
 The work is specifically aimed at submarine cable protection applications, in which the detection and localization of nearby vessels is crucial to monitor potential threats to the cable integrity. 
 
-For in-depth details on dataset acquisition, instrumentation, and methodology, please refer to the manuscript (see the [citation section](#How-to-Cite)).
+This repository accompanies our research paper on vessel detection and localization using Distributed Acoustic Sensing (DAS) technology applied to submarine telecommunication cables, published in the IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing (see the [How to Cite](#how-to-cite) section below). The project leverages repurposed submarine fiber optic cables as large-scale acoustic sensor arrays to continuously monitor maritime traffic and detect vessels in real time.
+
+For in-depth details on dataset acquisition, instrumentation, and methodology, please refer to the published manuscript (see the [citation section](#How-to-Cite)).
 
 ---
 
@@ -114,9 +116,10 @@ The dataset provides ground truth labels related to the distance from the fiber 
 
    - All processed windows produce `N_samples` feature matrices of shape `(N_channels, N_bands)`, stacked into `X`.
    - Corresponding labels go into `y`, and UTC timestamps into `datetimes`.
-   - Optionally, the raw AIS metadata (vessel type, speed, MMSI) are stored under `ship_info`.
+   - Optionally, the raw AIS metadata (vessel type, length, beam) are stored under `ship_info`.
 
 By framing each 10-seconds interval as a `(N_channels, N_bands)` energy-band snapshot, this dataset enables machine-learning models to learn vessel detection and distance-estimation based on both spatial patterns (across neighboring fiber channels), temporal patterns (across neighboring timestamps) and spectral content.
+
 
 ## Data availability
 
@@ -279,22 +282,31 @@ The example below shows the resulting plot, created from the provided 10-minute 
 ![Energy and Distance Combined Plot](./data/combined_plot_interval_20230616T155500_20230626T160500.png)
 
 
+E. E. Ramirez-Torres et al., "Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables," in , doi: 10.1109/JSTARS.2026.3716768.
+
 # How to Cite
 
-If you use these data or code in your work, please cite the following paper:
+If you use these data or code in your work, please cite the following references:
 
 > **Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables**
 > Erick Eduardo Ramirez-Torres, Javier Macias-Guarasa, Daniel Pizarro-Perez, Javier Tejedor, Sira Elena Palazuelos-Cagigas, Pedro J. Vidal-Moreno, Sonia Martin-Lopez, Miguel Gonzalez-Herraez, Roel Vanthillo.
-> arXiv preprint arXiv:2509.11614. 2025
-> (Submitted to IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing, 2025).
+> IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing, 2026 (accepted for publication).
 > 
-> DOI: https://doi.org/10.48550/arXiv.2509.11614 *(JSTAR Journal DOI to be assigned upon publication, if the paper is accepted)*
+> DOI: https://doi.org/10.1109/JSTARS.2026.3716768 
+
+
+> **Marlinks-NS DAS Dataset: Dataset for Vessel Detection and Distance Estimation Using Distributed Acoustic Sensing in Submarine Cables**
+> Erick Eduardo Ramirez-Torres, Javier Macias-Guarasa, Daniel Pizarro-Perez, Javier Tejedor, Sira Elena Palazuelos-Cagigas, Pedro J. Vidal-Moreno, Marı́a R. Fernández-Ruiz, Sonia Martin-Lopez, Miguel Gonzalez-Herraez, Roel Vanthillo.
+>  Dataset on Zenodo. 
+>
+>  DOI: https://doi.org/10.5281/zenodo.15611778
+
 
 ---
 
 # Supplementary Material
 
-We have generated an additional [web page with supplementary material](https://geintra-uah.org/psi/index.html), which mainly consists of videos demonstrating the behaviour of the algorithm under different conditions. It is available at [https://geintra-uah.org/psi/index.html](https://geintra-uah.org/psi/index.html).
+We have generated an additional [web page with supplementary material](https://geintra-uah.org/psi/index.html), which provides additional information on the paper proposal, incluiding some videos demonstrating the behaviour of the algorithm under different conditions. It is available at [https://geintra-uah.org/psi/index.html](https://geintra-uah.org/psi/index.html).
 
 ---
 
