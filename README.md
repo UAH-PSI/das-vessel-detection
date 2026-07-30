@@ -23,9 +23,9 @@ The complete dataset and its definitive documentation are distributed through Ze
 - [Usage and reproducibility workflows](#usage-and-reproducibility-workflows)
   - [Installation](#installation)
   - [Data partitioning recommendation](#data-partitioning-recommendation)
-  - [Generation of a day-wise k-fold train-test split](#generation-of-a-day-wise-(k-fold)-train/test-split)
+  - [Generation of a day-wise k-fold train-test split](#generation-of-a-day-wise-k-fold-traintest-split)
   - [Plot energy features and vessel distance](#plot-energy-features-and-vessel-distance)
-  - [AI/ML workflows (work in progress)](#AI/ML-workflows-work-in-progress)
+  - [AI/ML workflows (work in progress)](#aiml-workflows-work-in-progress)
 - [Supplementary material](#supplementary-material)
 - [Related publications](#related-publications)
 - [How to cite](#how-to-cite)
@@ -74,7 +74,7 @@ The released HDF5 file contains 74,771 sample-aligned observations:
 
 Thus, each sample consists of one `250 × 100` spatial-spectral feature matrix in `X`, one closest-vessel distance in `y`, the corresponding vessel attributes in `ship_info`, and one timestamp. The observations cover 16–25 June 2023 (UTC) and correspond to non-overlapping 10-second windows over a 2,553 m cable segment. The 100 spectral features are logarithmically spaced energy bands spanning 4–98 Hz, excluding 49–51 Hz.
 
-Each feature value is obtained by integrating the squared FFT magnitude over its corresponding frequency band. Three noisy spatial channels, with array indices `59`, `60` and `61`, were set to zero in the released feature matrices and should normally be excluded before model training or evaluation.
+Each feature value is obtained by summing the squared of the one-sided, Blackman-windowed FFT coefficients within the corresponding frequency band. Three noisy spatial channels, with array indices `59`, `60` and `61`, were set to zero in the released feature matrices and should normally be excluded before model training or evaluation.
 
 The dataset supports two principal tasks:
 
@@ -211,7 +211,7 @@ E. E. Ramirez-Torres et al., “Marlinks-NS DAS: Dataset for vessel detection an
 
 If you use the dataset, repository software, methodology, experimental results or associated supplementary resources, please cite **both companion publications and the Zenodo dataset**. The three references document complementary aspects of the work: the machine-learning methodology and experiments, the dataset design and validation, and the specific released dataset.
 
-Until the *Scientific Data* preprint is available, please cite the JSTARS article and the Zenodo dataset below. The third citation will be added as soon as its arXiv record is available (or the Data Descriptor paper is eventually published).
+Until the *Scientific Data* preprint is available, please cite the JSTARS article and the Zenodo dataset below. The third citation will be added when the arXiv preprint becomes available and updated following publication of the Data Descriptor.
 
 ### 1. IEEE JSTARS article
 
