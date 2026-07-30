@@ -2,12 +2,12 @@
 
 [![JSTARS article](https://img.shields.io/badge/IEEE%20JSTARS%20%28accepted%29-10.1109%2FJSTARS.2026.3716768-00629B)](https://doi.org/10.1109/JSTARS.2026.3716768)
 [![Dataset](https://img.shields.io/badge/Zenodo-10.5281%2Fzenodo.15611778-1682D4)](https://doi.org/10.5281/zenodo.15611778)
-[![Scientific Data](https://img.shields.io/badge/Scientific%20Data-submitted-orange)](#related-publications)
+[![ArXiV Preprint](https://img.shields.io/badge/ArXiV%20Preprint-submitted%20to%20Scientific%20Data-orange)](#related-publications)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
 ## Repository purpose
 
-This repository is the maintained companion software and reproducibility resource for our research group's work on vessel monitoring using distributed acoustic sensing (DAS) in submarine optical fiber cables. It supports:
+This repository provides the maintained companion software and reproducibility resources for our research group's work on vessel monitoring using distributed acoustic sensing (DAS) in submarine optical fiber cables. It supports:
 
 - The accepted IEEE JSTARS article on vessel detection and localization.
 - The submitted *Scientific Data* Data Descriptor presenting the Marlinks-NS DAS dataset.
@@ -29,7 +29,7 @@ The complete dataset and its definitive documentation are distributed through Ze
 - [Supplementary material](#supplementary-material)
 - [Related publications](#related-publications)
 - [How to cite](#how-to-cite)
-- [Licences](#licences)
+- [Licenses](#licenses)
 - [Funding and acknowledgements](#funding-and-acknowledgements)
 - [Contact and issue reporting](#contact-and-issue-reporting)
 
@@ -64,17 +64,16 @@ This GitHub repository also retains `data/reduced_dataset_sensor_range_1440_1690
 
 The released HDF5 file contains 74,771 sample-aligned observations:
 
-| Element     |                                                  Shape | Contents                                                                                            |
-|-------------|-------------------------------------------------------:|-----------------------------------------------------------------------------------------------------|
-| `X`         |                                    `(74771, 250, 100)` | DAS energy-band features, ordered as `(sample, spatial channel, frequency band)`                    |
-| `y`         |                                             `(74771,)` | Distance in meters to the closest AIS-reported vessel for each observation                          |
-| `ship_info` | HDF5 group containing three arrays of shape `(74771,)` | AIS-derived vessel type, length and beam of the closest vessel associated with each observation     |
-| `datetimes` |                                             `(74771,)` | UTC timestamp with format "%Y-%m-%d %H:%M:%S%z" (based on the ISO 8601 format) for each observation |
-|             |                                                        |                                                                                                     |
+| Element     |                                                  Shape | Contents                                                                                        |
+|-------------|-------------------------------------------------------:|-------------------------------------------------------------------------------------------------|
+| `X`         |                                    `(74771, 250, 100)` | DAS energy-band features, ordered as `(sample, spatial channel, frequency band)`                |
+| `y`         |                                             `(74771,)` | Distance in meters to the closest AIS-reported vessel for each observation                      |
+| `ship_info` | HDF5 group containing three arrays of shape `(74771,)` | AIS-derived vessel type, length and beam of the closest vessel associated with each observation |
+| `datetimes` |                                             `(74771,)` | UTC timestamps corresponding to each observation, formatted as `%Y-%m-%d %H:%M:%S%z`            |
 
 Thus, each sample consists of one `250 × 100` spatial-spectral feature matrix in `X`, one closest-vessel distance in `y`, the corresponding vessel attributes in `ship_info`, and one timestamp. The observations cover 16–25 June 2023 (UTC) and correspond to non-overlapping 10-second windows over a 2,553 m cable segment. The 100 spectral features are logarithmically spaced energy bands spanning 4–98 Hz, excluding 49–51 Hz.
 
-Each feature value is obtained by summing the squared of the one-sided, Blackman-windowed FFT coefficients within the corresponding frequency band. Three noisy spatial channels, with array indices `59`, `60` and `61`, were set to zero in the released feature matrices and should normally be excluded before model training or evaluation.
+Each feature value is obtained by summing the squared magnitudes of the one-sided, Blackman-windowed FFT coefficients within the corresponding frequency band. Three noisy spatial channels, with array indices `59`, `60` and `61`, were set to zero in the released feature matrices and should normally be excluded before model training or evaluation.
 
 The dataset supports two principal tasks:
 
@@ -94,7 +93,7 @@ The main repository resources include:
 | `data/fbands.csv`                                                 | Frequency-band boundaries used for feature extraction               |
 | `data/combined_plot_interval_20230616T155500_20230626T160500.png` | Example visualization generated from the demonstration data         |
 | `requirements.txt`                                                | Python package requirements                                         |
-| `logos/`                                                          | Funding and acknowledgment graphics                                |
+| `logos/`                                                          | Funding and acknowledgment graphics                                 |
 | `LICENSE`                                                         | License applying to the repository software                         |
 
 The repository is the actively maintained location for software updates and extended reproducibility material. The complete released data remain versioned and preserved in Zenodo.
@@ -113,7 +112,7 @@ cd das-vessel-detection
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install -r src/requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 On Windows PowerShell, activate the environment with:
@@ -126,7 +125,9 @@ On Windows PowerShell, activate the environment with:
 
 The observations form a continuous time series and are temporally correlated. Randomly assigning individual 10-second windows to training and test sets can therefore cause temporal leakage and produce overly optimistic performance estimates.
 
-The reproducibility workflows follow the day-wise 10-fold cross-validation strategy adopted in the associated studies. Each of the ten recording days defines one fold: in each cross-validation iteration, all observations from one complete day are held out for testing, while observations from the remaining nine days are used for model development. If a separate validation set is required, it should also be defined using temporally separated observations, preferably by holding out one or more complete training days.
+
+
+The reproducibility workflows follow the day-wise 10-fold, leave-one-day-out cross-validation strategy adopted in the associated studies. Each of the ten recording days defines one fold: in each cross-validation iteration, all observations from one complete day are held out for testing, while observations from the remaining nine days are used for model development. If a separate validation set is required, it should also be defined using temporally separated observations, preferably by holding out one or more complete training days.
 
 The ten folds correspond to the dataset recording days:
 
@@ -186,7 +187,7 @@ The Zenodo `src.zip` archive additionally provides small standalone examples for
 
 ### AI/ML workflows (work in progress)
 
-This section will provide reproducibility scripts for the training and testing procedures reported in the associated studies.
+This section will provide reproducibility scripts for the model-training and evaluation procedures reported in the associated studies.
 
 
 ## Supplementary material
@@ -209,31 +210,31 @@ E. E. Ramirez-Torres et al., “Marlinks-NS DAS: Dataset for vessel detection an
 
 ## How to cite
 
-If you use the dataset, repository software, methodology, experimental results or associated supplementary resources, please cite **both companion publications and the Zenodo dataset**. The three references document complementary aspects of the work: the machine-learning methodology and experiments, the dataset design and validation, and the specific released dataset.
+If you use the dataset, repository software, methodology, experimental results or associated supplementary resources, please cite both companion publications and the Zenodo dataset. The three references document complementary aspects of the work: the machine-learning methodology and experiments, the dataset design and validation, and the specific released dataset.
 
 Until the *Scientific Data* preprint is available, please cite the JSTARS article and the Zenodo dataset below. The third citation will be added when the arXiv preprint becomes available and updated following publication of the Data Descriptor.
 
-### 1. IEEE JSTARS article
+### 1. IEEE JSTARS accepted article
 
-> E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro-Perez, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables,” *IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing*, 2026. https://doi.org/10.1109/JSTARS.2026.3716768
+> E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro-Perez, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables”, *IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing*, 2026. Accepted for publication. [https://doi.org/10.1109/JSTARS.2026.3716768](https://doi.org/10.1109/JSTARS.2026.3716768)
 
-### 2. Scientific Data Data Descriptor
+### 2. Zenodo dataset
+
+> E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro-Perez, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, M. R. Fernández-Ruiz, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Marlinks-NS DAS Dataset for vessel detection and distance estimation using distributed acoustic sensing in submarine optical fiber cables”, Zenodo. [https://doi.org/10.5281/zenodo.15611778](https://doi.org/10.5281/zenodo.15611778)
+
+### 3. Scientific Data Data Descriptor
 
 > **Citation pending.** The complete arXiv reference will be inserted here when the preprint is released.
 
-### 3. Zenodo dataset
+## Licenses
 
-> E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro-Perez, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, M. R. Fernández-Ruiz, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Marlinks-NS DAS: Dataset for vessel detection and distance estimation using distributed acoustic sensing in submarine optical fiber cables,” Zenodo. https://doi.org/10.5281/zenodo.15611778
-
-## Licences
-
-The components are distributed under separate licences:
+The components are distributed under separate licenses:
 
 - **Repository software:** [GNU General Public License v3.0](LICENSE), as specified in the repository `LICENSE` file.
 - **Zenodo dataset:** [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/), as specified in the Zenodo record.
-- **Publications:** the licence stated by the corresponding publisher or preprint platform.
+- **Publications:** the license stated by the corresponding publisher or preprint platform.
 
-The demonstration HDF5 extract in this repository is data rather than software and is covered by the dataset licence. Users should consult the applicable licence files and records before redistribution or reuse.
+The demonstration HDF5 extract in this repository is data rather than software and is covered by the dataset license. Users should consult the applicable license files and records before redistribution or reuse.
 
 
 ## Funding and acknowledgements
