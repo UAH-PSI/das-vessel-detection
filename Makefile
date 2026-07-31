@@ -8,6 +8,19 @@ HTML     := $(BASENAME).html
 TEX      := $(BASENAME).tex
 PDF      := $(BASENAME).pdf
 
+# Compilation-safe public README/PDF. Shields.io serves SVG by default, but
+# PNG assets are used here because they can be embedded directly by XeLaTeX.
+PUBLIC_BASENAME := README-public
+PUBLIC_MD       := $(PUBLIC_BASENAME).md
+PUBLIC_PDF      := $(PUBLIC_BASENAME).pdf
+PUBLIC_TITLE    := $(shell sed -n '1s/^# //p' $(MD))
+BADGE_DIR       := assets/readme-badges
+JSTARS_BADGE    := $(BADGE_DIR)/jstars.png
+DATASET_BADGE   := $(BADGE_DIR)/dataset.png
+ARXIV_BADGE     := $(BADGE_DIR)/arxiv.png
+LICENSE_BADGE   := $(BADGE_DIR)/license.png
+BADGES          := $(JSTARS_BADGE) $(DATASET_BADGE) $(ARXIV_BADGE) $(LICENSE_BADGE)
+
 # Check for pandoc
 PANDOC := $(shell command -v pandoc 2> /dev/null)
 
@@ -60,15 +73,80 @@ endif
 
 
 
+# Download local, PDF-safe versions of the badges used at the top of README.md.
+$(BADGE_DIR):
+	mkdir -p "$@"
+
+$(JSTARS_BADGE): | $(BADGE_DIR)
+	curl -fL --retry 3 \
+	  'https://img.shields.io/badge/IEEE%20JSTARS%20%28accepted%29-10.1109%2FJSTARS.2026.3716768-00629B.png' \
+	  -o "$@"
+
+$(DATASET_BADGE): | $(BADGE_DIR)
+	curl -fL --retry 3 \
+	  'https://img.shields.io/badge/Zenodo-10.5281%2Fzenodo.15611778-1682D4.png' \
+	  -o "$@"
+
+$(ARXIV_BADGE): | $(BADGE_DIR)
+	curl -fL --retry 3 \
+	  'https://img.shields.io/badge/ArXiV%20Preprint-submitted%20to%20Scientific%20Data-orange.png' \
+	  -o "$@"
+
+$(LICENSE_BADGE): | $(BADGE_DIR)
+	curl -fL --retry 3 \
+	  'https://img.shields.io/badge/License-GPLv3-blue.png' \
+	  -o "$@"
+
+# Produce a public Markdown copy with local badges and PDF-friendly headings.
+# The source title becomes PDF metadata, so omit it from the Markdown body;
+# likewise omit the hand-written TOC because Pandoc generates its own.
+$(PUBLIC_MD): $(MD) $(BADGES)
+	sed -E \
+	  -e '1d' \
+	  -e '/^## Table of contents$$/,/^## Project summary$$/ { /^## Project summary$$/!d; }' \
+	  -e 's/^#(#+ )/\1/' \
+	  -e 's|https://img.shields.io/badge/IEEE%20JSTARS%20%28accepted%29-10.1109%2FJSTARS.2026.3716768-00629B|$(JSTARS_BADGE)|g' \
+	  -e 's|https://img.shields.io/badge/Zenodo-10.5281%2Fzenodo.15611778-1682D4|$(DATASET_BADGE)|g' \
+	  -e 's|https://img.shields.io/badge/ArXiV%20Preprint-submitted%20to%20Scientific%20Data-orange|$(ARXIV_BADGE)|g' \
+	  -e 's|https://img.shields.io/badge/License-GPLv3-blue.svg|$(LICENSE_BADGE)|g' \
+	  -e 's|(!\[[^]]*\]\([^)]*readme-badges/[^)]*\.png\))|\1{height=15px}|g' \
+	  -e '/readme-badges\/license\.png.*\]\(LICENSE\)$$/a\
+```{=latex}\n\\newpage\n```' \
+	  "$<" > "$@.tmp"
+	mv "$@.tmp" "$@"
+
+$(PUBLIC_PDF): $(PUBLIC_MD) $(YAML)
+ifndef PANDOC
+	$(error "pandoc is not available. Please install pandoc first.")
+endif
+	pandoc "$<" \
+	-t pdf -o "$@.tmp" \
+	--pdf-engine=xelatex \
+	--metadata-file "$(YAML)" \
+	--variable urlcolor=blue \
+	--metadata title="$(PUBLIC_TITLE)" \
+	--number-sections \
+	--table-of-contents \
+	--highlight-style kate \
+	-V colorlinks \
+	-V geometry:"top=2cm, bottom=1.5cm, left=2cm, right=2cm" \
+	--toc-depth=4
+	mv "$@.tmp" "$@"
+
 # Phony targets
-.PHONY: html latex pdf clean help
+.PHONY: html latex pdf public-pdf clean help
 
 html: $(HTML)
 latex: $(TEX)
 pdf: $(PDF)
 
+# Build through README-public.md, then publish the result under the canonical
+# README.pdf name. mv ensures a failed compilation leaves README.pdf intact.
+public-pdf: $(PUBLIC_PDF)
+	mv "$(PUBLIC_PDF)" "$(PDF)"
+
 clean:
-	rm -f $(HTML) $(TEX) $(PDF)
+	rm -f $(HTML) $(TEX) $(PDF) $(PUBLIC_MD) $(PUBLIC_PDF) $(PUBLIC_PDF).tmp
 
 help:
 	@echo "Available targets:"
@@ -76,5 +154,6 @@ help:
 	@echo "  html   - Build HTML version"
 	@echo "  latex  - Build LaTeX version"
 	@echo "  pdf    - Build PDF version"
+	@echo "  public-pdf - Download badges, build README-public.md, and publish README.pdf"
 	@echo "  clean  - Remove generated files"
 	@echo "  help   - Show this help"

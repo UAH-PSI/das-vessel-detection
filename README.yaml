@@ -1,19 +1,47 @@
 ---
-title: "PSI - Distributed Acoustic Sensing for Vessel Detection and Localization Using Submarine Cables"
-author: |
-  Erick E. Ramirez-Torres \and
-  Javier Macias-Guarasa \and
-  Daniel Pizarro-Perez \and
-  Javier Tejedor-Noguerales \and
-  Sira Palazuelos-Cagigas \and
-  Sonia Martin-Lopez \and
-  Miguel Gonzalez-Herraez \and
-  Roel Vanthillo
-date: 2025-06-01
+title: "Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables"
+author:
+  - Erick E. Ramirez-Torres
+  - Javier Macias-Guarasa
+  - Daniel Pizarro
+  - Javier Tejedor-Noguerales
+  - Sira Palazuelos-Cagigas
+  - Pedro J. Vidal-Moreno
+  - María R. Fernández-Ruiz
+  - Sonia Martin-Lopez
+  - Miguel Gonzalez-Herraez
+  - Roel Vanthillo
+
+date: 2026-07-31
+
+monofont: "DejaVu Sans Mono"
 
 header-includes:
-  - \usepackage[utf8]{inputenc}
-  - \usepackage{newunicodechar}
-  - \newunicodechar{📢}{}
+    - |
+      ```{=latex}
+      \usepackage{titling}
+      \preauthor{\begin{center}\large
+        \begin{minipage}{0.95\textwidth}\centering}
+      \postauthor{\end{minipage}
+        \end{center}}
+      \renewcommand{\and}{\unskip,\space}
+
+      \usepackage[utf8]{inputenc}
+      \usepackage{newunicodechar}
+      \newunicodechar{📢}{}
+
+      % Code-block appearance
+      \usepackage{xcolor}
+      \usepackage{framed}
+      \definecolor{codebackground}{HTML}{F5F7FA}
+      \definecolor{codeborder}{HTML}{CBD5E1}
+
+      \renewenvironment{Shaded}
+        {\def\FrameCommand{%
+           \fboxsep=8pt%
+           \fcolorbox{codeborder}{codebackground}}%
+         \MakeFramed{\advance\hsize-\width\FrameRestore}}
+        {\endMakeFramed}
+      ```
 
 ---
