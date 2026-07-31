@@ -2,8 +2,9 @@
 
 [![JSTARS article](https://img.shields.io/badge/IEEE%20JSTARS%20%28accepted%29-10.1109%2FJSTARS.2026.3716768-00629B)](https://doi.org/10.1109/JSTARS.2026.3716768)
 [![Dataset](https://img.shields.io/badge/Zenodo-10.5281%2Fzenodo.15611778-1682D4)](https://doi.org/10.5281/zenodo.15611778)
-[![ArXiV Preprint](https://img.shields.io/badge/ArXiV%20Preprint-submitted%20to%20Scientific%20Data-orange)](#related-publications)
+[![ArXiV Preprint](https://img.shields.io/badge/ArXiV%20Preprint-submitted%20to%20Scientific%20Data-orange)](https://doi.org/10.48550/arXiv.2607.28306)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+
 
 ## Repository purpose
 
@@ -27,7 +28,6 @@ The complete dataset and its definitive documentation are distributed through Ze
   - [Plot energy features and vessel distance](#plot-energy-features-and-vessel-distance)
   - [AI/ML workflows (work in progress)](#aiml-workflows-work-in-progress)
 - [Supplementary material](#supplementary-material)
-- [Related publications](#related-publications)
 - [How to cite](#how-to-cite)
 - [Licenses](#licenses)
 - [Funding and acknowledgements](#funding-and-acknowledgements)
@@ -64,12 +64,12 @@ This GitHub repository also retains `data/reduced_dataset_sensor_range_1440_1690
 
 The released HDF5 file contains 74,771 sample-aligned observations:
 
-| Element     |                                                  Shape | Contents                                                                                        |
-|-------------|-------------------------------------------------------:|-------------------------------------------------------------------------------------------------|
-| `X`         |                                    `(74771, 250, 100)` | DAS energy-band features, ordered as `(sample, spatial channel, frequency band)`                |
-| `y`         |                                             `(74771,)` | Distance in meters to the closest AIS-reported vessel for each observation                      |
-| `datetimes` |                                             `(74771,)` | UTC timestamps corresponding to each observation, formatted as `%Y-%m-%d %H:%M:%S%z`            |
-| `ship_info` | HDF5 group containing three arrays of shape `(74771,)` | AIS-derived vessel type, length and beam of the closest vessel associated with each observation |
+| Element     |                                                  Shape | Contents                                                                                                                                   |
+|-------------|-------------------------------------------------------:|--------------------------------------------------------------------------------------------------------------------------------------------|
+| `X`         |                                    `(74771, 250, 100)` | DAS energy-band features, ordered as `(sample, spatial channel, frequency band)`                                                           |
+| `y`         |                                             `(74771,)` | Distance in meters to the closest AIS-reported vessel for each observation                                                                 |
+| `datetimes` |                                             `(74771,)` | UTC timestamps corresponding to each observation, formatted as `%Y-%m-%d %H:%M:%S%z` following Python’s `strftime` format-code conventions |
+| `ship_info` | HDF5 group containing three arrays of shape `(74771,)` | AIS-derived vessel type, length and beam of the closest vessel associated with each observation                                            |
 
 Thus, each sample consists of one `250 × 100` spatial-spectral feature matrix in `X`, one closest-vessel distance in `y`, the corresponding vessel attributes in `ship_info`, and one timestamp. The observations cover 16–25 June 2023 (UTC) and correspond to non-overlapping 10-second windows over a 2,553 m cable segment. The 100 spectral features are logarithmically spaced energy bands spanning 4–98 Hz, excluding 49–51 Hz.
 
@@ -195,18 +195,6 @@ This section will provide reproducibility scripts for the model-training and eva
 The [project supplementary website](https://geintra-uah.org/psi/index.html) provides additional material supporting the JSTARS study, including visual demonstrations of the method under different conditions.
 
 
-## Related publications
-
-### IEEE JSTARS article
-
-E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables,” *IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing*, 2026.  
-[https://doi.org/10.1109/JSTARS.2026.3716768](https://doi.org/10.1109/JSTARS.2026.3716768)
-
-### Scientific Data Data Descriptor
-
-E. E. Ramirez-Torres et al., “Marlinks-NS DAS: Dataset for vessel detection and distance estimation using distributed acoustic sensing in submarine optical fiber cables,” submitted to *Scientific Data*, 2026.
-
-> **Preprint pending:** the arXiv citation, identifier and link will be added here as soon as the preprint is available.
 
 ## How to cite
 
@@ -214,7 +202,7 @@ If you use the dataset, repository software, methodology, experimental results o
 
 1. The published [Marlinks-NS DAS dataset deposited in Zenodo](https://doi.org/10.5281/zenodo.15611778).
 2. The accepted [IEEE JSTARS article](https://doi.org/10.1109/JSTARS.2026.3716768) describing our vessel-detection and localization methodology and experiments.
-3. The [ArXiV preprint documenting and validating the Marlinks-NS dataset](https://doi.org/...) (submitted to be considered for publication as a Data Descriptor in the *Scientific Data* journal).
+3. The [ArXiV preprint documenting and validating the Marlinks-NS dataset](https://doi.org/...) (submitted to be considered for publication as a Data Descriptor to the *Scientific Data* journal).
 
 ### 1. Zenodo dataset
 
@@ -224,9 +212,10 @@ If you use the dataset, repository software, methodology, experimental results o
 
 > E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables”. Accepted for publication in the IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing, 2026. doi: [10.1109/JSTARS.2026.3716768](https://doi.org/10.1109/JSTARS.2026.37167)
 
-### 3. ArXiV preprint (submitted to be considered for publication as a Data Descriptor in the Scientific Data journal):
+### 3. ArXiV preprint (submitted to be considered for publication as a Data Descriptor to the Scientific Data journal):
 
-> E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “A Distributed Acoustic Sensing Dataset for Vessel Detection and Localization in Submarine Cable Protection”. ArXiV Preprint. doi: [...](https://doi.org/...)
+> E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, *“A Distributed Acoustic Sensing Dataset for Vessel Detection and Localization in Submarine Cable Protection”*. ArXiv preprint arXiv:2509.11614. doi: [10.48550/arXiv.2607.28306](https://doi.org/10.48550/arXiv.2607.28306)
+
 
 ## Licenses
 
@@ -255,14 +244,13 @@ The authors acknowledge the computing resources provided by Artemisa, funded by 
 
 ## Contact and issue reporting
 
-For scientific questions about the dataset or the associated studies, contact:
+For questions about the dataset or the associated studies, please contact:
 
 **Javier Macias-Guarasa**  
 Universidad de Alcalá  
 [javier.maciasguarasa@uah.es](mailto:javier.maciasguarasa@uah.es)
 
-For source code contributions or feature requests, please use the repository [issue tracker](https://github.com/UAH-PSI/das-vessel-detection/issues). When reporting a problem, include the command executed, relevant input and output paths, the observed error and enough environment information to reproduce it.
-
+For source-code issues, contributions, or feature requests, please use the repository [issue tracker](https://github.com/UAH-PSI/das-vessel-detection/issues). When reporting an issue, include the command executed, relevant input and output data and paths, the observed error, and sufficient information about the execution environment to reproduce it.
 
 <!-- Local Variables: -->
 <!-- mode: markdown -->
