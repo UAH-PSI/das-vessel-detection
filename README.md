@@ -12,9 +12,9 @@ This repository provides the maintained companion software and reproducibility r
 
 1. The published [Marlinks-NS DAS dataset deposited in Zenodo](https://doi.org/10.5281/zenodo.15611778).
 2. The accepted [IEEE JSTARS article](https://doi.org/10.1109/JSTARS.2026.3716768) describing our vessel-detection and localization methodology and experiments.
-3. The [ArXiV preprint documenting and validating the Marlinks-NS dataset](https://doi.org/...) (submitted to be considered for publication as a Data Descriptor in the *Scientific Data* journal).
+3. The [ArXiV preprint documenting and validating the Marlinks-NS dataset](https://doi.org/10.48550/arXiv.2607.28306) (submitted to be considered for publication as a Data Descriptor in the *Scientific Data* journal).
 
-The complete dataset and its definitive documentation are distributed through Zenodo. This repository contains complementary source code, reproducibility workflows, plotting tools, frequency-band definitions, a small demonstration dataset and supplementary resources.
+The complete dataset and its definitive documentation are distributed through Zenodo. This repository contains complementary source code, reproducibility workflows, plotting tools, frequency-band definitions, a small demonstration dataset and supplementary resources, and will be updated with additional source-code tools and reproducibility material.
 
 ## Table of contents
 
