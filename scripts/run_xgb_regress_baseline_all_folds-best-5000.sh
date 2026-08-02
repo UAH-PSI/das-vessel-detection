@@ -13,7 +13,7 @@ python src/model_experiment_hdf5.py \
   --model_file models/baseline_xgb_regression_model.py \
   --is_NN false \
   --is_regression true \
-  --regression_threshold 8000 \
+  --regression_threshold 5000 \
   --test_date_start 2023-06-16 \
   --test_date_end 2023-06-25 \
   --n_seconds 50 \
