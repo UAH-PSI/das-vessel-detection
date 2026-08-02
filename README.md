@@ -26,7 +26,7 @@ The complete dataset and its definitive documentation are distributed through Ze
   - [Data partitioning recommendation](#data-partitioning-recommendation)
   - [Generation of a day-wise k-fold train-test split](#generation-of-a-day-wise-k-fold-traintest-split)
   - [Plot energy features and vessel distance](#plot-energy-features-and-vessel-distance)
-  - [AI/ML workflows (work in progress)](#aiml-workflows-work-in-progress)
+  - [Baseline AI/ML experiments](#baseline-aiml-experiments)
 - [Supplementary material](#supplementary-material)
 - [How to cite](#how-to-cite)
 - [Licenses](#licenses)
@@ -89,6 +89,8 @@ The main repository resources include:
 | Path                                             | Purpose                                                             |
 |--------------------------------------------------|---------------------------------------------------------------------|
 | `src/`                                           | Dataset loading, partitioning, plotting and reproducibility scripts |
+| `models/`                                        | Public baseline XGBoost classification and regression models        |
+| `scripts/`                                       | Maintained launchers for the best baseline experiment configurations |
 | `data/reduced_dataset_sensor_range_1440_1690.h5` | Ten-minute demonstration extract                                    |
 | `data/fbands.csv`                                | Frequency-band boundaries used for feature extraction               |
 | `data/combined_plot_interval_...0.png`           | Example visualization generated from the demonstration data         |
@@ -185,14 +187,39 @@ Example output:
 
 The Zenodo `src.zip` archive additionally provides small standalone examples for inspecting the HDF5 structure, loading all data or selected slices, checking consistency between full and sliced loading, and generating day-wise partitions.
 
-### AI/ML workflows (work in progress)
+### Baseline AI/ML experiments (supporting the [JSTARS journal](#2.-ieee-jstars-accepted-article))
 
-This section will provide reproducibility scripts for the model-training and evaluation procedures reported in the associated studies.
+The public repository includes the experiment runner and the baseline XGBoost models for vessel detection (classification) and vessel-distance estimation (regression) that are referenced in the [JSTARS journal](#2.-ieee-jstars-accepted-article). Run commands from the repository root after completing the [installation](#installation).
+
+The included ten-minute HDF5 extract is useful for loading and plotting checks, but it does not contain the complete set of daily folds. Download the full dataset from [Zenodo](https://doi.org/10.5281/zenodo.15611778) before running the all-fold experiments, then either place it at `data/dataset_sensor_range_1440_1690_0.h5` or change `--h5_path` in the commands.
+
+Start with these documents:
+
+| Guide                                                                  | Purpose                                                                    |
+|------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| [README-run-experiments.md](README-run-experiments.md)                 | Installation, baseline commands, result files, MLflow, and result analysis |
+| [README-develop-models.md](README-develop-models.md)                   | Reference documentation for adding classification or regression models     |
+| [README-tutorial-develop-models.md](README-tutorial-develop-models.md) | Step-by-step model-development tutorial                                    |
+| [EXPERIMENT-KNOWN-ISSUES.md](EXPERIMENT-KNOWN-ISSUES.md)               | Active limitations, workarounds, and resolution criteria                   |
+
+The two maintained baseline launchers that replicate the best experiments in the [JSTARS journal](#2.-ieee-jstars-accepted-article) are:
+
+- `scripts/run_xgb_classif_baseline_all_folds-best.sh`: 
+- `scripts/run_xgb_regress_baseline_all_folds-best-1000-avg_chann.sh`
+
+
+They use:
+
+- `models/baseline_xgb_classification_model.py`;
+- `models/baseline_xgb_regression_model.py`;
+- `src/model_experiment_hdf5.py`.
+
+Review the known-issues document before interpreting results. In particular, the current evaluator is binary, classification AUC after temporal smoothing has a known probability-alignment limitation, and the persisted date-range model is the model trained for the final fold.
 
 
 ## Supplementary material
 
-The [project supplementary website](https://geintra-uah.org/psi/index.html) provides additional material supporting the JSTARS study, including visual demonstrations of the method under different conditions.
+The [JSTART paper supplementary website](https://geintra-uah.org/psi/index.html) provides additional material supporting the JSTARS study, including visual demonstrations of the method under different conditions.
 
 
 
@@ -200,22 +227,13 @@ The [project supplementary website](https://geintra-uah.org/psi/index.html) prov
 
 If you use the dataset, repository software, methodology, experimental results or associated supplementary resources, please cite the following related research outputs:
 
-1. The published [Marlinks-NS DAS dataset deposited in Zenodo](https://doi.org/10.5281/zenodo.15611778).
-2. The accepted [IEEE JSTARS article](https://doi.org/10.1109/JSTARS.2026.3716768) describing our vessel-detection and localization methodology and experiments.
-3. The [ArXiV preprint documenting and validating the Marlinks-NS dataset](https://doi.org/...) (submitted to be considered for publication as a Data Descriptor to the *Scientific Data* journal).
-
-### 1. Zenodo dataset
-
-
-## Supplementary material
-
-The [JSTART paper supplementary website](https://geintra-uah.org/psi/index.html) provides additional material supporting the JSTARS study, including visual demonstrations of the method under different conditions.
-
+- The published [Marlinks-NS DAS dataset deposited in Zenodo](https://doi.org/10.5281/zenodo.15611778).
+> E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, M. R. Fernández-Ruiz, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Marlinks-NS DAS Dataset for vessel detection and distance estimation using distributed acoustic sensing in submarine optical fiber cables”, Zenodo. doi: [10.5281/zenodo.15611778](https://doi.org/10.5281/zenodo.15611778)
+- The accepted [IEEE JSTARS article](https://doi.org/10.1109/JSTARS.2026.3716768) describing our vessel-detection and localization methodology and experiments.
 > E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables”. Accepted for publication in the IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing, 2026. doi: [10.1109/JSTARS.2026.3716768](https://doi.org/10.1109/JSTARS.2026.37167)
-
-### 3. ArXiV preprint (submitted to be considered for publication as a Data Descriptor to the Scientific Data journal):
-
+- The [ArXiV preprint documenting and validating the Marlinks-NS dataset](https://doi.org/...) (submitted to be considered for publication as a Data Descriptor to the *Scientific Data* journal).
 > E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, *“A Distributed Acoustic Sensing Dataset for Vessel Detection and Localization in Submarine Cable Protection”*. ArXiv preprint arXiv:2509.11614. doi: [10.48550/arXiv.2607.28306](https://doi.org/10.48550/arXiv.2607.28306)
+
 
 
 ## Licenses
@@ -257,4 +275,3 @@ For source-code issues, contributions, or feature requests, please use the repos
 <!-- mode: markdown -->
 <!-- ispell-local-dictionary: "en_US" -->
 <!-- End: -->
-

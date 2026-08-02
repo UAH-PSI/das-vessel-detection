@@ -5,4 +5,14 @@ matplotlib==3.7.0
 h5py
 opencv-python
 tqdm
-imblearn
+imbalanced-learn
+shap
+torch==2.1.2
+lightgbm
+prefect
+mlflow
+xgboost
+scipy
+seaborn
+tabulate
+mlflow-export-import
