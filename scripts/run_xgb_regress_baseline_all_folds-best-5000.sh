@@ -13,7 +13,7 @@ python src/model_experiment_hdf5.py \
   --model_file models/baseline_xgb_regression_model.py \
   --is_NN false \
   --is_regression true \
-  --regression_threshold 8000 \
+  --regression_threshold 5000 \
   --test_date_start 2023-06-16 \
   --test_date_end 2023-06-25 \
   --n_seconds 50 \
@@ -24,6 +24,6 @@ python src/model_experiment_hdf5.py \
   --reduce_to_size 250 \
   --use_mid_target true \
   --random_state 42 \
-  --run_name xgboost-regression-all-folds-1000-best \
+  --run_name xgboost-regression-all-folds-5000-best \
   --mlflow_experiment_name DAS-XGBoost-regression-jstars \
   --mlflow_tracking_uri sqlite:///mlflow.db
