@@ -193,7 +193,9 @@ The Zenodo `src.zip` archive additionally provides small standalone examples for
 
 ### Baseline AI/ML experiments (supporting the [JSTARS journal](#jstars-cite))
 
-The public repository includes the experiment runner and the baseline XGBoost models for vessel detection (classification) and vessel-distance estimation (regression) that are referenced in the [JSTARS journal](#2.-ieee-jstars-accepted-article). Run commands from the repository root after completing the [installation](#installation).
+The public repository includes the experiment runner and the baseline XGBoost models for vessel detection (classification) and vessel-distance estimation (regression) that are referenced in the [JSTARS journal](#2.-ieee-jstars-accepted-article). The source code used in the paper experiments was heavily modified to ease its use and to be adapted to the current experimental framework distributed in this repository. This is the reason why there will be minor variations in the performance results reported (partly due to a different random seed used in the original code).
+
+Run commands from the repository root after completing the [installation](#installation).
 
 The included ten-minute HDF5 extract is useful for loading and plotting checks, but it does not contain the complete set of daily folds. Download the full dataset from [Zenodo](https://doi.org/10.5281/zenodo.15611778) before running the all-fold experiments, then either place it at `data/dataset_sensor_range_1440_1690_0.h5` or change `--h5_path` in the commands.
 
@@ -205,11 +207,11 @@ Start with these documents:
 | [README-develop-models.md](README-develop-models.md)                   | Reference documentation for adding classification or regression models     |
 | [README-tutorial-develop-models.md](README-tutorial-develop-models.md) | Step-by-step model-development tutorial                                    |
 
-The two maintained baseline launchers that replicate the best experiments in the [JSTARS journal](#2.-ieee-jstars-accepted-article) are:
+The three maintained baseline launchers that replicate the best experiments in the [JSTARS journal](#2.-ieee-jstars-accepted-article) are:
 
-- `scripts/run_xgb_classif_baseline_all_folds-best.sh`: 
-- `scripts/run_xgb_regress_baseline_all_folds-best-1000.sh`
-- `scripts/run_xgb_regress_baseline_all_folds-best-full-range.sh`
+- `scripts/run_xgb_classif_baseline_all_folds-best.sh`: For threshold = 1,000 m, achieves global F1 = 90.11%, class 0 F1 = 84.23%, class 1 F1 = 92.93%, accuracy = 90.24%, and AUC = 94.42%.
+- `scripts/run_xgb_regress_baseline_all_folds-best-1000.sh`: For threshold = 1,000 m, achieves global MAE = 141 m.
+- `scripts/run_xgb_regress_baseline_all_folds-best-5000.sh`: For threshold = 5,000 m, achieves global MAE = 557 m.
 
 They use:
 
