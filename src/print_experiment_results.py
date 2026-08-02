@@ -746,15 +746,17 @@ def print_classification(metrics: dict[str, Any], decimals: int) -> None:
                     format_value(weighted.get("recall"), decimals),
                     format_value(entry.get("auc"), decimals),
                     format_value(report.get("macro avg", {}).get("f1-score"), decimals),
+                    format_value(weighted.get("f1-score"), decimals),
                     format_value(weighted.get("support"), decimals),
                 ]
             )
         print_heading("Results by day/fold", "-")
         print_table(["day/fold", "accuracy", "weighted precision", "weighted recall",
-                     "AUC", "macro F1", "support"], rows)
+                     "AUC", "macro F1", "weighted F1", "support"], rows)
         print("Note: Every row is calculated directly from that held-out fold's predictions. "
-              "Precision and recall are class-support-weighted within the fold; macro F1 "
-              "gives each class equal weight. No cross-fold averaging or bootstrap is used.")
+              "Precision, recall and weighted F1 are class-support-weighted within the fold; "
+              "macro F1 gives each class equal weight. No cross-fold averaging or bootstrap "
+              "is used.")
 
 
 def metric_table(metrics: dict[str, Any], decimals: int) -> list[list[str]]:
