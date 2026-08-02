@@ -80,6 +80,10 @@ The dataset supports two principal tasks:
 1. **Vessel detection:** binary classification obtained by applying a stated distance threshold to the continuous target.
 2. **Vessel-to-cable distance estimation:** regression using the continuous closest-vessel distance.
 
+The numeric meanings of classes 0 and 1 depend on the configured threshold
+polarity; see the [experiment guide](README-run-experiments.md#class-polarity-and-confusion-matrix-convention)
+for the class and confusion-matrix convention.
+
 For the complete and current technical description, refer to the documentation in the [Zenodo record](https://doi.org/10.5281/zenodo.15611778).
 
 ## Repository contents
