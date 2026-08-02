@@ -14,7 +14,7 @@ This repository provides the maintained companion software and reproducibility r
 2. The accepted [IEEE JSTARS article](https://doi.org/10.1109/JSTARS.2026.3716768) describing our vessel-detection and localization methodology and experiments.
 3. The [ArXiV preprint documenting and validating the Marlinks-NS dataset](https://doi.org/10.48550/arXiv.2607.28306) (submitted to be considered for publication as a Data Descriptor in the *Scientific Data* journal).
 
-The complete dataset and its definitive documentation are distributed through Zenodo. This repository contains complementary source code, reproducibility workflows, plotting tools, frequency-band definitions, a small demonstration dataset and supplementary resources, and will be updated with additional source-code tools and reproducibility material.
+The complete dataset and its definitive documentation are distributed through [Zenodo](https://doi.org/10.5281/zenodo.15611778). This repository contains complementary source code, reproducibility workflows, plotting tools, frequency-band definitions, a small demonstration dataset and supplementary resources, and will be updated with additional source-code tools and reproducibility material.
 
 ## Table of contents
 
@@ -41,16 +41,16 @@ This project investigates the use of DAS on a pre-existing ocean-bottom telecomm
 
 The Marlinks-NS measurements were acquired over ten days using a 28 km submarine optical fiber cable. The released dataset contains processed spatial-spectral DAS features from a selected 2,553 m segment, together with timestamps, closest-vessel distance labels and AIS-derived vessel information.
 
-The original raw DAS recordings, the precise cable route and other sensitive geographical details cannot be released because of data-owner and critical-infrastructure restrictions. Instead, the openly released dataset provides the processed features and metadata needed to reproduce the defined machine-learning tasks. See the Zenodo documentation for the authoritative description of the acquisition, processing, data structure, limitations and permitted use.
+The original raw DAS recordings, the precise cable route and other sensitive geographical details cannot be released because of data-owner and critical-infrastructure restrictions. Instead, the openly released dataset provides the processed features and metadata needed to reproduce the defined machine-learning tasks. See the [Zenodo](https://doi.org/10.5281/zenodo.15611778) documentation for the authoritative description of the acquisition, processing, data structure, limitations and permitted use.
 
 ## Dataset availability
 
-The complete released dataset is available from Zenodo:
+The complete released dataset is available from [Zenodo](https://doi.org/10.5281/zenodo.15611778):
 
 > **Marlinks-NS DAS Dataset for vessel detection and distance estimation using distributed acoustic sensing in submarine optical fiber cables**  
 > [https://doi.org/10.5281/zenodo.15611778](https://doi.org/10.5281/zenodo.15611778)
 
-The Zenodo record is the authoritative source for:
+The [Zenodo record](https://doi.org/10.5281/zenodo.15611778) record is the authoritative source for:
 
 - The complete processed HDF5 dataset.
 - The definitive dataset documentation and file inventory.
@@ -98,7 +98,7 @@ The main repository resources include:
 | `logos/`                                         | Funding and acknowledgment graphics                                 |
 | `LICENSE`                                        | License applying to the repository software                         |
 
-The repository is the actively maintained location for software updates and extended reproducibility material. The complete released data remain versioned and preserved in Zenodo.
+This repository is the actively maintained location for software updates and extended reproducibility material. The complete released data remain versioned and preserved in [Zenodo](https://doi.org/10.5281/zenodo.15611778).
 
 
 ## Usage and reproducibility workflows
@@ -167,7 +167,7 @@ The output directory contains:
 - `datetimes_train.npy` and `datetimes_test.npy`.
 - When available, `ship_info_train.npz` and `ship_info_test.npz`.
 
-Use the HDF5 file downloaded from Zenodo for complete experiments. 
+Use the HDF5 file downloaded from [Zenodo record](https://doi.org/10.5281/zenodo.15611778) for complete experiments. 
 
 ### Plot energy features and vessel distance
 
@@ -187,7 +187,7 @@ Example output:
 
 The Zenodo `src.zip` archive additionally provides small standalone examples for inspecting the HDF5 structure, loading all data or selected slices, checking consistency between full and sliced loading, and generating day-wise partitions.
 
-### Baseline AI/ML experiments (supporting the [JSTARS journal](#2.-ieee-jstars-accepted-article))
+### Baseline AI/ML experiments (supporting the [JSTARS journal](#jstars-cite))
 
 The public repository includes the experiment runner and the baseline XGBoost models for vessel detection (classification) and vessel-distance estimation (regression) that are referenced in the [JSTARS journal](#2.-ieee-jstars-accepted-article). Run commands from the repository root after completing the [installation](#installation).
 
@@ -205,8 +205,8 @@ Start with these documents:
 The two maintained baseline launchers that replicate the best experiments in the [JSTARS journal](#2.-ieee-jstars-accepted-article) are:
 
 - `scripts/run_xgb_classif_baseline_all_folds-best.sh`: 
-- `scripts/run_xgb_regress_baseline_all_folds-best-1000-avg_chann.sh`
-
+- `scripts/run_xgb_regress_baseline_all_folds-best-1000.sh`
+- `scripts/run_xgb_regress_baseline_all_folds-best-full-range.sh`
 
 They use:
 
@@ -214,12 +214,12 @@ They use:
 - `models/baseline_xgb_regression_model.py`;
 - `src/model_experiment_hdf5.py`.
 
-Review the known-issues document before interpreting results. In particular, the current evaluator is binary, classification AUC after temporal smoothing has a known probability-alignment limitation, and the persisted date-range model is the model trained for the final fold.
+Review the [known issues document](EXPERIMENT-KNOWN-ISSUES.md) before running experiments and interpreting results. 
 
 
 ## Supplementary material
 
-The [JSTART paper supplementary website](https://geintra-uah.org/psi/index.html) provides additional material supporting the JSTARS study, including visual demonstrations of the method under different conditions.
+The [JSTARS paper supplementary website](https://geintra-uah.org/psi/index.html) provides additional material supporting the [JSTARS study](#jstars-cite), including visual demonstrations of the method under different conditions.
 
 
 
@@ -227,11 +227,11 @@ The [JSTART paper supplementary website](https://geintra-uah.org/psi/index.html)
 
 If you use the dataset, repository software, methodology, experimental results or associated supplementary resources, please cite the following related research outputs:
 
-- The published [Marlinks-NS DAS dataset deposited in Zenodo](https://doi.org/10.5281/zenodo.15611778).
+- <a id="zenodo-cite"></a>The published [Marlinks-NS DAS dataset deposited in Zenodo](https://doi.org/10.5281/zenodo.15611778).
 > E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, M. R. Fernández-Ruiz, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Marlinks-NS DAS Dataset for vessel detection and distance estimation using distributed acoustic sensing in submarine optical fiber cables”, Zenodo. doi: [10.5281/zenodo.15611778](https://doi.org/10.5281/zenodo.15611778)
-- The accepted [IEEE JSTARS article](https://doi.org/10.1109/JSTARS.2026.3716768) describing our vessel-detection and localization methodology and experiments.
+- <a id="jstars-cite">The accepted [IEEE JSTARS article](https://doi.org/10.1109/JSTARS.2026.3716768) describing our vessel-detection and localization methodology and experiments.
 > E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables”. Accepted for publication in the IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing, 2026. doi: [10.1109/JSTARS.2026.3716768](https://doi.org/10.1109/JSTARS.2026.37167)
-- The [ArXiV preprint documenting and validating the Marlinks-NS dataset](https://doi.org/...) (submitted to be considered for publication as a Data Descriptor to the *Scientific Data* journal).
+- <a id="data-descriptor-cite">The [ArXiV preprint documenting and validating the Marlinks-NS dataset](https://doi.org/...) (submitted to be considered for publication as a Data Descriptor to the *Scientific Data* journal).
 > E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, *“A Distributed Acoustic Sensing Dataset for Vessel Detection and Localization in Submarine Cable Protection”*. ArXiv preprint arXiv:2509.11614. doi: [10.48550/arXiv.2607.28306](https://doi.org/10.48550/arXiv.2607.28306)
 
 
