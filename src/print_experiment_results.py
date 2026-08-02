@@ -850,7 +850,9 @@ def print_metadata(metadata: dict[str, Any]) -> None:
         "model_file",
         "is_NN",
         "is_regression",
+        "classification_thresholds",
         "thresholds",
+        "invert_threshold_logic",
         "regression_evaluation_threshold",
         "test_date_start",
         "test_date_end",
@@ -867,6 +869,61 @@ def print_metadata(metadata: dict[str, Any]) -> None:
         print_table(["parameter", "value"], rows)
 
 
+def print_class_convention(metadata: dict[str, Any]) -> None:
+    """Explain binary labels and the class-1-positive confusion-matrix convention."""
+    print_heading("Class and confusion-matrix convention", "-")
+
+    if metadata.get("target_file") is not None:
+        print("Class meanings unavailable: this experiment used an external target, so the "
+              "distance-threshold polarity does not define its labels.")
+        return
+
+    thresholds = metadata.get("classification_thresholds", metadata.get("thresholds"))
+    if not isinstance(thresholds, (list, tuple)) or len(thresholds) != 1:
+        print("Class meanings unavailable: the result metadata does not contain exactly one "
+              "classification threshold.")
+        return
+    if "invert_threshold_logic" not in metadata:
+        print("Class meanings unavailable: the result metadata does not record "
+              "invert_threshold_logic.")
+        return
+
+    threshold = thresholds[0]
+    try:
+        threshold_text = f"{float(threshold):,g}"
+    except (TypeError, ValueError):
+        threshold_text = str(threshold)
+    inverted_value = metadata["invert_threshold_logic"]
+    inverted = (inverted_value.strip().lower() == "true"
+                if isinstance(inverted_value, str) else bool(inverted_value))
+
+    print(f"Threshold: {threshold_text} metres")
+    print(f"invert_threshold_logic: {str(inverted).lower()}")
+    if inverted:
+        print(f"Class 0: distance > {threshold_text} m (far/no-nearby-vessel condition; conventional negative class)")
+        print(f"Class 1: distance <= {threshold_text} m (nearby-vessel condition; conventional positive class)")
+        meanings = (
+            "TP means correctly predicting the nearby-vessel condition.",
+            "TN means correctly predicting the far/no-nearby-vessel condition.",
+            f"FP means predicting the nearby-vessel condition when the vessel is actually farther than {threshold_text} m.",
+            "FN means predicting the far/no-nearby-vessel condition when the vessel is actually nearby.",
+        )
+    else:
+        print(f"Class 0: distance <= {threshold_text} m (nearby-vessel condition; conventional negative class)")
+        print(f"Class 1: distance > {threshold_text} m (far/no-nearby-vessel condition; conventional positive class)")
+        meanings = (
+            "TP means correctly predicting the far/no-nearby-vessel condition.",
+            "TN means correctly predicting the nearby-vessel condition.",
+            "FP means predicting the far/no-nearby-vessel condition when the vessel is actually nearby.",
+            f"FN means predicting the nearby-vessel condition when the vessel is actually farther than {threshold_text} m.",
+        )
+    print("Confusion matrix: rows are actual classes and columns are predicted classes;")
+    print("[[TN, FP], [FN, TP]]. Per-class metrics treat each class as positive in turn.")
+    print()
+    for meaning in meanings:
+        print(f"- {meaning}")
+
+
 def print_complete_result(
     result: dict[str, Any],
     decimals: int,
@@ -878,6 +935,8 @@ def print_complete_result(
     print(f"File: {result['path'].resolve()}")
     print(f"Task: {result['task']}")
     print(f"Scope: {result['scope']}")
+    if result["task"] == "classification":
+        print_class_convention(result["metadata"])
     if show_metadata:
         print_metadata(result["metadata"])
     if result["task"] == "classification":
