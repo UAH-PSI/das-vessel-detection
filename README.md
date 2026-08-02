@@ -206,9 +206,10 @@ If you use the dataset, repository software, methodology, experimental results o
 
 ### 1. Zenodo dataset
 
-> E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, M. R. Fernández-Ruiz, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Marlinks-NS DAS Dataset for vessel detection and distance estimation using distributed acoustic sensing in submarine optical fiber cables”, Zenodo. doi: [10.5281/zenodo.15611778](https://doi.org/10.5281/zenodo.15611778)
 
-### 2. IEEE JSTARS accepted article
+## Supplementary material
+
+The [JSTART paper supplementary website](https://geintra-uah.org/psi/index.html) provides additional material supporting the JSTARS study, including visual demonstrations of the method under different conditions.
 
 > E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables”. Accepted for publication in the IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing, 2026. doi: [10.1109/JSTARS.2026.3716768](https://doi.org/10.1109/JSTARS.2026.37167)
 
