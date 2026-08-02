@@ -24,6 +24,6 @@ python src/model_experiment_hdf5.py \
   --reduce_to_size 250 \
   --use_mid_target true \
   --random_state 42 \
-  --run_name xgboost-regression-all-folds-1000-best \
+  --run_name xgboost-regression-all-folds-5000-best \
   --mlflow_experiment_name DAS-XGBoost-regression-jstars \
   --mlflow_tracking_uri sqlite:///mlflow.db
