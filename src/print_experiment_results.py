@@ -654,7 +654,11 @@ def complete_pooled_classification_results(metrics: dict[str, Any]) -> dict[str,
     return final_results
 
 
-def print_final_results(final_results: dict[str, Any], decimals: int) -> None:
+def print_final_results(
+    final_results: dict[str, Any],
+    decimals: int,
+    heading: str = "Global results and 95% confidence intervals",
+) -> None:
     if not final_results:
         return
     rows = []
@@ -666,7 +670,7 @@ def print_final_results(final_results: dict[str, Any], decimals: int) -> None:
         rows.append([name, format_value(value, decimals), format_value(lower, decimals),
                      format_value(upper, decimals)])
     if rows:
-        print_heading("Global results and 95% confidence intervals", "-")
+        print_heading(heading, "-")
         print_table(["metric", "value", "CI lower", "CI upper"], rows)
         if final_results.get("per_class"):
             print("Note: F1, precision, recall and accuracy use the confusion matrix formed by "
@@ -764,8 +768,108 @@ def metric_table(metrics: dict[str, Any], decimals: int) -> list[list[str]]:
     return [[key, format_value(metrics[key], decimals)] for key in preferred if key in metrics]
 
 
+def pooled_regression_metrics(folds: list[dict[str, Any]]) -> dict[str, float]:
+    """Calculate regression metrics after pooling the observations in ``folds``."""
+    usable = []
+    for fold in folds:
+        try:
+            support = int(fold.get("SUPPORT", 0))
+            mae = float(fold["MAE"])
+            mse = float(fold["MSE"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if support > 0 and math.isfinite(mae) and math.isfinite(mse):
+            usable.append((fold, support, mae, mse))
+
+    total_support = sum(support for _, support, _, _ in usable)
+    if not total_support:
+        return {}
+
+    mae = sum(value * support for _, support, value, _ in usable) / total_support
+    mse = sum(value * support for _, support, _, value in usable) / total_support
+    result = {"MAE": mae, "RMSE": math.sqrt(mse), "MSE": mse}
+
+    # Reconstruct pooled R2 from the fold sufficient statistics. For each fold,
+    # R2 = 1 - SSE/SST, while MEAN_TARGET and SUPPORT provide the between-fold
+    # correction needed to express every SST around the global target mean.
+    r2_parts = []
+    for fold, support, _, fold_mse in usable:
+        try:
+            fold_r2 = float(fold["R2"])
+            target_mean = float(fold["MEAN_TARGET"])
+        except (KeyError, TypeError, ValueError):
+            break
+        sse = fold_mse * support
+        if not math.isfinite(fold_r2) or not math.isfinite(target_mean) or fold_r2 == 1.0:
+            break
+        r2_parts.append((support, target_mean, sse, sse / (1.0 - fold_r2)))
+    else:
+        global_target_mean = (
+            sum(support * target_mean for support, target_mean, _, _ in r2_parts)
+            / total_support
+        )
+        total_sse = sum(sse for _, _, sse, _ in r2_parts)
+        total_sst = sum(
+            within_sst + support * (target_mean - global_target_mean) ** 2
+            for support, target_mean, _, within_sst in r2_parts
+        )
+        if total_sst > 0:
+            result["R2"] = 1.0 - total_sse / total_sst
+
+    return result
+
+
+def complete_pooled_regression_results(
+    metrics: dict[str, Any], n_bootstrap: int = 1000, random_seed: int = 42
+) -> dict[str, Any]:
+    """Return pooled point estimates and complete-fold bootstrap intervals."""
+    folds = metrics.get("metrics_by_day", [])
+    if not isinstance(folds, list) or not folds:
+        return {}
+
+    point_estimates = pooled_regression_metrics(folds)
+    if not point_estimates:
+        return {}
+
+    rng = np.random.RandomState(random_seed)
+    bootstrap_values = {name: [] for name in point_estimates}
+    for _ in range(n_bootstrap):
+        sampled = [folds[index] for index in rng.choice(len(folds), len(folds), replace=True)]
+        sampled_metrics = pooled_regression_metrics(sampled)
+        for name in bootstrap_values:
+            value = sampled_metrics.get(name)
+            if value is not None and math.isfinite(value):
+                bootstrap_values[name].append(value)
+
+    final_results = {}
+    for name, point_estimate in point_estimates.items():
+        values = bootstrap_values[name]
+        interval = tuple(float(value) for value in np.percentile(values, [2.5, 97.5]))
+        final_results[name] = (point_estimate, interval)
+    return final_results
+
+
 def print_regression(metrics: dict[str, Any], decimals: int) -> None:
-    print_final_results(metrics.get("final_results", {}), decimals)
+    pooled_results = complete_pooled_regression_results(metrics)
+    print_final_results(pooled_results, decimals)
+    if pooled_results:
+        print("Note: Point estimates are calculated from all frames pooled across all folds. "
+              "MAE is the mean of every frame's absolute error; MSE, RMSE and R2 are also "
+              "recalculated from the pooled fold statistics. Each interval bootstraps "
+              "complete folds with replacement, pools the sampled folds, and recalculates "
+              "the metric.")
+
+    resampled_results = metrics.get("final_results", {})
+    print_final_results(
+        resampled_results,
+        decimals,
+        "Frame-resampled results and 95% confidence intervals",
+    )
+    if resampled_results:
+        print("Note: These legacy results resample individual frames with replacement from "
+              "the observations pooled across all folds. The displayed value is the mean of "
+              "1,000 bootstrap estimates, and the interval contains their 2.5th and 97.5th "
+              "percentiles. Frames, rather than complete folds, are the resampling units.")
 
     weighted = metrics.get("fold_weighted_metrics")
     average = metrics.get("average_metrics")
@@ -783,11 +887,18 @@ def print_regression(metrics: dict[str, Any], decimals: int) -> None:
                 )
         print_heading("Aggregated regression metrics", "-")
         print_table(["metric", "fold average", "support weighted"], rows)
+        print("Note: Every metric is first calculated separately within each fold. The fold "
+              "average gives every fold equal weight; the support-weighted column weights "
+              "each fold by its number of frames. Support-weighted MAE and MSE equal their "
+              "pooled values, but averaged RMSE and R2 do not generally equal pooled RMSE "
+              "and R2. No bootstrap is used in this section.")
     else:
         rows = metric_table(metrics, decimals)
         if rows:
             print_heading("Regression metrics", "-")
             print_table(["metric", "value"], rows)
+            print("Note: Metrics are calculated directly from this single held-out fold's "
+                  "frames. No cross-fold averaging or bootstrap is used in this section.")
 
     daily = metrics.get("metrics_by_day", [])
     if daily:
@@ -804,6 +915,9 @@ def print_regression(metrics: dict[str, Any], decimals: int) -> None:
             )
         print_heading("Results by day/fold", "-")
         print_table(["day/fold", "MAE", "RMSE", "R2", "support"], rows)
+        print("Note: Every row is calculated directly from that held-out fold's frames. "
+              "Support is the number of evaluated frames. No cross-fold averaging or "
+              "bootstrap is used.")
 
     threshold_result = metrics.get("regression_threshold_evaluation")
     if isinstance(threshold_result, dict):
@@ -812,7 +926,17 @@ def print_regression(metrics: dict[str, Any], decimals: int) -> None:
             f"Evaluation metrics for true distance <= {format_value(threshold, decimals)}",
             "-",
         )
-        print_final_results(threshold_result.get("final_results", {}), decimals)
+        threshold_final = threshold_result.get("final_results", {})
+        print_final_results(
+            threshold_final,
+            decimals,
+            "Frame-resampled threshold results and 95% confidence intervals",
+        )
+        if threshold_final:
+            print("Note: Only frames whose true distance is at or below the evaluation "
+                  "threshold are included. Individual retained frames are resampled with "
+                  "replacement 1,000 times; the value is the bootstrap mean and the limits "
+                  "are the 2.5th and 97.5th percentiles.")
         rows = metric_table(threshold_result, decimals)
         if rows:
             print_table(["metric", "value"], rows)
@@ -844,6 +968,9 @@ def print_regression(metrics: dict[str, Any], decimals: int) -> None:
                 ["day/fold", "MAE", "RMSE", "MSE", "R2", "support"],
                 fold_rows,
             )
+            print("Note: Every row is calculated from that fold's frames whose true distance "
+                  "is at or below the evaluation threshold. No cross-fold averaging or "
+                  "bootstrap is used.")
 
 
 def print_metadata(metadata: dict[str, Any]) -> None:
