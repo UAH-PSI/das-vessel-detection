@@ -200,7 +200,6 @@ Start with these documents:
 | [README-run-experiments.md](README-run-experiments.md)                 | Installation, baseline commands, result files, MLflow, and result analysis |
 | [README-develop-models.md](README-develop-models.md)                   | Reference documentation for adding classification or regression models     |
 | [README-tutorial-develop-models.md](README-tutorial-develop-models.md) | Step-by-step model-development tutorial                                    |
-| [EXPERIMENT-KNOWN-ISSUES.md](EXPERIMENT-KNOWN-ISSUES.md)               | Active limitations, workarounds, and resolution criteria                   |
 
 The two maintained baseline launchers that replicate the best experiments in the [JSTARS journal](#2.-ieee-jstars-accepted-article) are:
 
@@ -214,7 +213,6 @@ They use:
 - `models/baseline_xgb_regression_model.py`;
 - `src/model_experiment_hdf5.py`.
 
-Review the [known issues document](EXPERIMENT-KNOWN-ISSUES.md) before running experiments and interpreting results. 
 
 
 ## Supplementary material
