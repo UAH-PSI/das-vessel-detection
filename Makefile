@@ -15,7 +15,8 @@ PUBLIC_BASENAME := README-public
 PUBLIC_MD       := $(BUILD_DIR)/$(PUBLIC_BASENAME).md
 PUBLIC_PDF      := $(BUILD_DIR)/$(PUBLIC_BASENAME).pdf
 PUBLIC_TITLE    := $(shell sed -n '1s/^# //p' $(MD))
-BADGE_DIR       := assets/readme-badges
+BADGE_DIR       := $(BUILD_DIR)/readme-badges
+BADGE_LINK_DIR  := readme-badges
 JSTARS_BADGE    := $(BADGE_DIR)/jstars.png
 DATASET_BADGE   := $(BADGE_DIR)/dataset.png
 ARXIV_BADGE     := $(BADGE_DIR)/arxiv.png
@@ -109,10 +110,10 @@ $(PUBLIC_MD): $(MD) $(BADGES) | $(BUILD_DIR)
 	  -e '1d' \
 	  -e '/^## Table of contents$$/,/^## Project summary$$/ { /^## Project summary$$/!d; }' \
 	  -e 's/^#(#+ )/\1/' \
-	  -e 's|https://img.shields.io/badge/IEEE%20JSTARS%20%28accepted%29-10.1109%2FJSTARS.2026.3716768-00629B|../$(JSTARS_BADGE)|g' \
-	  -e 's|https://img.shields.io/badge/Zenodo-10.5281%2Fzenodo.15611778-1682D4|../$(DATASET_BADGE)|g' \
-	  -e 's|https://img.shields.io/badge/ArXiV%20Preprint-submitted%20to%20Scientific%20Data-orange|../$(ARXIV_BADGE)|g' \
-	  -e 's|https://img.shields.io/badge/License-GPLv3-blue.svg|../$(LICENSE_BADGE)|g' \
+	  -e 's|https://img.shields.io/badge/IEEE%20JSTARS%20%28accepted%29-10.1109%2FJSTARS.2026.3716768-00629B|$(BADGE_LINK_DIR)/jstars.png|g' \
+	  -e 's|https://img.shields.io/badge/Zenodo-10.5281%2Fzenodo.15611778-1682D4|$(BADGE_LINK_DIR)/dataset.png|g' \
+	  -e 's|https://img.shields.io/badge/ArXiV%20Preprint-submitted%20to%20Scientific%20Data-orange|$(BADGE_LINK_DIR)/arxiv.png|g' \
+	  -e 's|https://img.shields.io/badge/License-GPLv3-blue.svg|$(BADGE_LINK_DIR)/license.png|g' \
 	  -e 's|\]\(docs/|](../docs/|g' \
 	  -e 's|\]\(LICENSE\)|](../LICENSE)|g' \
 	  -e 's|\]\(data/|](../data/|g' \
@@ -155,7 +156,7 @@ public-pdf: $(PUBLIC_PDF)
 	mv "$(PUBLIC_PDF)" "$(PDF)"
 
 clean:
-	rm -f $(HTML) $(TEX) $(PDF) $(PUBLIC_MD) $(PUBLIC_PDF) $(PUBLIC_PDF).tmp
+	rm -rf "$(BUILD_DIR)"
 
 help:
 	@echo "Available targets:"
