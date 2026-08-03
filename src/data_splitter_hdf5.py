@@ -25,6 +25,29 @@ from bisect import bisect_left
 import shap
 
 
+def _nearest_datetime_index(datetimes, target_dt, tolerance):
+    """Return the nearest timestamp index within tolerance, preferring earlier ties."""
+    insert_position = bisect_left(datetimes, target_dt)
+    candidate_indices = []
+
+    # Put the preceding timestamp first so exact ties resolve to the earlier one.
+    if insert_position > 0:
+        candidate_indices.append(insert_position - 1)
+    if insert_position < len(datetimes):
+        candidate_indices.append(insert_position)
+
+    if not candidate_indices:
+        return None
+
+    matched_index = min(
+        candidate_indices,
+        key=lambda index: abs(datetimes[index] - target_dt),
+    )
+    if abs(datetimes[matched_index] - target_dt) > tolerance:
+        return None
+    return matched_index
+
+
 def compute_shap_values(model, X_train, X_data, feature_names, nsamples_background=100, nsamples_explain=None):
     # Create a background sample from X_train
     background = shap.utils.sample(X_train, nsamples=nsamples_background)
@@ -108,7 +131,7 @@ class TripletReducer:
             self.X, self.y, self.dt = list(X_sorted), list(y_sorted), list(dt_sorted)
 
     def _apply_time_offset(self):
-        """Efficiently correct the labels by checking for the exact target dt + time_offset_seconds within a 5-second tolerance."""
+        """Correct labels using the nearest target to dt + time_offset_seconds within a 5-second tolerance."""
         if self.time_offset_seconds is None:
             return
 
@@ -123,23 +146,15 @@ class TripletReducer:
             # Calculate the target time
             target_dt = current_dt + timedelta(seconds=self.time_offset_seconds)
 
-            # Use binary search to find the closest index where target_dt could be inserted
-            insert_position = bisect_left(self.dt, target_dt)
-
-            # Check the nearest neighbors within the tolerance
-            if insert_position < len(self.dt):
-                if abs(self.dt[insert_position] - target_dt) <= time_tolerance:
-                    reduced_X.append(self.X[i])
-                    reduced_y.append(self.y[insert_position])
-                    reduced_dt.append(target_dt)
-                    if self.ships:
-                        reduced_ships.append(self.ships[i])
-                elif insert_position > 0 and abs(self.dt[insert_position - 1] - target_dt) <= time_tolerance:
-                    reduced_X.append(self.X[i])
-                    reduced_y.append(self.y[insert_position - 1])
-                    reduced_dt.append(current_dt)
-                    if self.ships:
-                        reduced_ships.append(self.ships[i])
+            matched_index = _nearest_datetime_index(
+                self.dt, target_dt, time_tolerance
+            )
+            if matched_index is not None:
+                reduced_X.append(self.X[i])
+                reduced_y.append(self.y[matched_index])
+                reduced_dt.append(target_dt)
+                if self.ships:
+                    reduced_ships.append(self.ships[i])
 
         self.X = np.array(reduced_X)
         self.y = np.array(reduced_y)
@@ -302,7 +317,7 @@ class TripletRegressionReducer:
 
     # @time_it
     def _apply_time_offset(self):
-        """Efficiently correct the labels by checking for the exact target dt + time_offset_seconds within a 5-second tolerance."""
+        """Correct labels using the nearest target to dt + time_offset_seconds within a 5-second tolerance."""
         if self.time_offset_seconds is None:
             return
 
@@ -317,23 +332,15 @@ class TripletRegressionReducer:
             # Calculate the target time
             target_dt = current_dt + timedelta(seconds=self.time_offset_seconds)
 
-            # Use binary search to find the closest index where target_dt could be inserted
-            insert_position = bisect_left(self.dt, target_dt)
-
-            # Check the nearest neighbors within the tolerance
-            if insert_position < len(self.dt):
-                if abs(self.dt[insert_position] - target_dt) <= time_tolerance:
-                    reduced_X.append(self.X[i])
-                    reduced_y.append(self.y[insert_position])
-                    reduced_dt.append(target_dt)
-                    if self.ships:
-                        reduced_ships.append(self.ships[i])
-                elif insert_position > 0 and abs(self.dt[insert_position - 1] - target_dt) <= time_tolerance:
-                    reduced_X.append(self.X[i])
-                    reduced_y.append(self.y[insert_position - 1])
-                    reduced_dt.append(current_dt)
-                    if self.ships:
-                        reduced_ships.append(self.ships[i])
+            matched_index = _nearest_datetime_index(
+                self.dt, target_dt, time_tolerance
+            )
+            if matched_index is not None:
+                reduced_X.append(self.X[i])
+                reduced_y.append(self.y[matched_index])
+                reduced_dt.append(target_dt)
+                if self.ships:
+                    reduced_ships.append(self.ships[i])
 
         self.X = np.array(reduced_X)
         self.y = np.array(reduced_y)
@@ -526,7 +533,7 @@ class TripletRegressionReducer:
 #             self.X, self.y, self.dt = list(X_sorted), list(y_sorted), list(dt_sorted)
 
 #     def _apply_time_offset(self):
-#         """Efficiently correct the labels by checking for the exact target dt + time_offset_seconds within a 5-second tolerance."""
+#         """Correct labels using the nearest target to dt + time_offset_seconds within a 5-second tolerance."""
 #         if self.time_offset_seconds is None:
 #             return
 

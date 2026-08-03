@@ -214,6 +214,8 @@ Every selected day must be represented in the dataset. Classification folds must
 | `--time_offset_seconds`   | Pair features at time `t` with targets near `t + offset`              |
 | `--use_mid_target`        | Choose central/modal rather than minimum target during reduction      |
 
+> **Warning:** Use `--time_offset_seconds` only for datasets known to contain a feature/target timestamp offset. Current HDF5 releases are already synchronized and require no offset.
+
 XGBoost and the simple fully connected NNs should normally use `channel` or `time_channel`, which produce a two-dimensional batch. The best examples use `channel`.
 
 For `n_seconds=50` and `n_overlapping_seconds=-10`, the effective overlap is 40 seconds and the stride is 10 seconds.

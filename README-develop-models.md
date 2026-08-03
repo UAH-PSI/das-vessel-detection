@@ -68,6 +68,8 @@ The grouping step advances by `group_size - overlap_size`. A positive `--n_overl
 
 `--time_offset_seconds N` pairs the feature at time `t` with a target near `t + N` (within five seconds). Unmatched samples are removed.
 
+> **Warning:** Use `--time_offset_seconds` only for datasets known to contain a feature/target timestamp offset. Current HDF5 releases are already synchronized and require no offset.
+
 Within each feature-aggregation group:
 
 - Regression with `--use_mid_target true` uses the central target; `false` uses the minimum target.
