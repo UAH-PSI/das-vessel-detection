@@ -850,7 +850,10 @@ def complete_pooled_regression_results(
 
 
 def print_regression(metrics: dict[str, Any], decimals: int) -> None:
-    pooled_results = complete_pooled_regression_results(metrics)
+    pooled_results = (
+        metrics.get("pooled_final_results")
+        or complete_pooled_regression_results(metrics)
+    )
     print_final_results(pooled_results, decimals)
     if pooled_results:
         print("Note: Point estimates are calculated from all frames pooled across all folds. "

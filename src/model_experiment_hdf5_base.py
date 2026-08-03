@@ -856,6 +856,130 @@ class RegressionMetricsAggregator:
         }
 
 
+def compute_pooled_regression_metrics(folds):
+    """Calculate regression metrics after pooling all observations in the folds."""
+    usable = []
+    for fold in folds:
+        try:
+            support = int(fold.get("SUPPORT", 0))
+            mae = float(fold["MAE"])
+            mse = float(fold["MSE"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if support > 0 and np.isfinite(mae) and np.isfinite(mse):
+            usable.append((fold, support, mae, mse))
+
+    total_support = sum(support for _, support, _, _ in usable)
+    if not total_support:
+        return {}
+
+    mae = sum(value * support for _, support, value, _ in usable) / total_support
+    mse = sum(value * support for _, support, _, value in usable) / total_support
+    result = {"MAE": mae, "RMSE": float(np.sqrt(mse)), "MSE": mse}
+
+    r2_parts = []
+    for fold, support, _, fold_mse in usable:
+        try:
+            fold_r2 = float(fold["R2"])
+            target_mean = float(fold["MEAN_TARGET"])
+        except (KeyError, TypeError, ValueError):
+            break
+        sse = fold_mse * support
+        if not np.isfinite(fold_r2) or not np.isfinite(target_mean) or fold_r2 == 1.0:
+            break
+        r2_parts.append((support, target_mean, sse, sse / (1.0 - fold_r2)))
+    else:
+        global_target_mean = (
+            sum(support * target_mean for support, target_mean, _, _ in r2_parts)
+            / total_support
+        )
+        total_sse = sum(sse for _, _, sse, _ in r2_parts)
+        total_sst = sum(
+            within_sst + support * (target_mean - global_target_mean) ** 2
+            for support, target_mean, _, within_sst in r2_parts
+        )
+        if total_sst > 0:
+            result["R2"] = 1.0 - total_sse / total_sst
+
+    return result
+
+
+def compute_pooled_regression_final_results(
+    folds, n_bootstrap=1000, random_state=42
+):
+    """Calculate pooled estimates and complete-fold bootstrap intervals."""
+    point_estimates = compute_pooled_regression_metrics(folds)
+    if not point_estimates:
+        return {}
+
+    rng = np.random.RandomState(random_state)
+    bootstrap_values = {name: [] for name in point_estimates}
+    for _ in range(n_bootstrap):
+        sampled = [folds[index] for index in rng.choice(len(folds), len(folds), replace=True)]
+        sampled_metrics = compute_pooled_regression_metrics(sampled)
+        for name in bootstrap_values:
+            value = sampled_metrics.get(name)
+            if value is not None and np.isfinite(value):
+                bootstrap_values[name].append(value)
+
+    final_results = {}
+    for name, point_estimate in point_estimates.items():
+        values = bootstrap_values[name]
+        interval = tuple(float(value) for value in np.percentile(values, [2.5, 97.5]))
+        final_results[name] = (point_estimate, interval)
+    return final_results
+
+
+def compute_frame_resampled_regression_results(
+    folds, n_bootstrap=1000, random_state=42
+):
+    """Preserve the legacy individual-frame bootstrap regression results."""
+    residual_parts = [fold.get('residuals', np.array([])) for fold in folds]
+    all_residuals = np.concatenate(residual_parts) if residual_parts else np.array([])
+    if not len(all_residuals):
+        return {}
+
+    true_parts = []
+    predicted_parts = []
+    for fold in folds:
+        if 'y_true' in fold and 'y_pred' in fold:
+            true_parts.append(fold['y_true'])
+            predicted_parts.append(fold['y_pred'])
+    all_y_true = np.concatenate(true_parts) if true_parts else np.array([])
+    all_y_pred = np.concatenate(predicted_parts) if predicted_parts else np.array([])
+    if len(all_y_true):
+        all_residuals = all_y_true - all_y_pred
+
+    rng = np.random.RandomState(random_state)
+    bootstrap_values = {name: [] for name in ("MAE", "RMSE", "MSE", "R2")}
+    for _ in range(n_bootstrap):
+        indices = rng.choice(len(all_residuals), size=len(all_residuals), replace=True)
+        residuals = all_residuals[indices]
+        mse = np.mean(residuals ** 2)
+        bootstrap_values["MAE"].append(np.mean(np.abs(residuals)))
+        bootstrap_values["RMSE"].append(np.sqrt(mse))
+        bootstrap_values["MSE"].append(mse)
+        if len(all_y_true):
+            y_true = all_y_true[indices]
+            y_pred = all_y_pred[indices]
+            denominator = np.sum((y_true - np.mean(y_true)) ** 2)
+            bootstrap_values["R2"].append(
+                1 - np.sum((y_true - y_pred) ** 2) / denominator
+                if denominator > 0 else 0.0
+            )
+
+    final_results = {}
+    for name, values in bootstrap_values.items():
+        if values:
+            final_results[name] = (
+                float(np.mean(values)),
+                tuple(float(value) for value in np.percentile(values, [2.5, 97.5])),
+            )
+        else:
+            final_results[name] = (0.0, (0.0, 0.0))
+    return final_results
+
+
 def aggregate_regression_threshold_metrics(daily_metrics, threshold, random_state=42):
     """Aggregate an optional evaluation-only slice across regression folds."""
     fold_metrics = [
@@ -958,7 +1082,10 @@ def log_performance_results(metrics, is_regression, scope, day=None, fold_label=
         context.append(f"test day {day}")
     logger.info("Performance results: %s (%s)", task, ", ".join(context))
 
-    final_results = metrics.get("final_results")
+    final_results = (
+        metrics.get("pooled_final_results", metrics.get("final_results"))
+        if is_regression else metrics.get("final_results")
+    )
     if isinstance(final_results, dict):
         names = ("MAE", "RMSE", "MSE", "R2") if is_regression else (
             "f1", "accuracy", "auc"
@@ -1004,6 +1131,11 @@ def log_performance_results(metrics, is_regression, scope, day=None, fold_label=
                     average_name.replace(" avg", "").capitalize(),
                     average["f1-score"],
                 )
+        weighted = report.get("weighted avg", {})
+        if "precision" in weighted:
+            logger.info("  Weighted precision: %.4f", weighted["precision"])
+        if "recall" in weighted:
+            logger.info("  Weighted recall: %.4f", weighted["recall"])
         logger.info(
             "  Confusion matrix: %s",
             np.asarray(metrics["confusion_matrix"]).tolist(),
@@ -1896,16 +2028,11 @@ class PipelineExecutorHDF5:
                             logger.warning(f"Failed to create per-day metrics plots: {e}")                  
 
                 else:
-                    # --- regression via residual bootstrap across days/folds ---
+                    # --- pooled regression metrics with complete-fold bootstrap ---
                     daily_res = [d.get('residuals', np.array([])) for d in metrics_aggregator.metrics]
                     all_res = np.concatenate(daily_res) if daily_res else np.array([])
-                    n_res = len(all_res)
-                    rng = np.random.RandomState(self.config.get('random_state', 42))
 
-                    # Bootstrap for multiple metrics
-                    boot_maes, boot_rmses, boot_r2s, boot_mses = [], [], [], []
-
-                    # Collect all true and predicted values for R2 bootstrap
+                    # Collect true and predicted values for optional MLflow diagnostics.
                     all_y_true = []
                     all_y_pred = []
                     for d in metrics_aggregator.metrics:
@@ -1918,39 +2045,18 @@ class PipelineExecutorHDF5:
                         all_y_pred = np.concatenate(all_y_pred)
                         all_res = all_y_true - all_y_pred
 
-                    for _ in range(1000):
-                        idx = rng.choice(n_res, size=n_res, replace=True)
-                        boot_res = all_res[idx]
-                        boot_maes.append(np.mean(np.abs(boot_res)))
-                        boot_rmses.append(np.sqrt(np.mean(boot_res ** 2)))
-                        boot_mses.append(np.mean(boot_res ** 2))
-
-                        # R2 bootstrap (if we have true and predicted values)
-                        if all_y_true is not None and len(all_y_true) > 0:
-                            y_true_boot = all_y_true[idx]
-                            y_pred_boot = all_y_pred[idx]
-                            ss_res = np.sum((y_true_boot - y_pred_boot) ** 2)
-                            ss_tot = np.sum((y_true_boot - np.mean(y_true_boot)) ** 2)
-                            r2_boot = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0.0
-                            boot_r2s.append(r2_boot)
-
-                    # Compute CIs
-                    mae_ci_lo, mae_ci_hi = np.percentile(boot_maes, [2.5, 97.5]) if boot_maes else (0.0, 0.0)
-                    rmse_ci_lo, rmse_ci_hi = np.percentile(boot_rmses, [2.5, 97.5]) if boot_rmses else (0.0, 0.0)
-                    mse_ci_lo, mse_ci_hi = np.percentile(boot_mses, [2.5, 97.5]) if boot_mses else (0.0, 0.0)
-                    r2_ci_lo, r2_ci_hi = np.percentile(boot_r2s, [2.5, 97.5]) if boot_r2s else (0.0, 0.0)
-
-                    mae_mean = float(np.mean(boot_maes)) if boot_maes else 0.0
-                    rmse_mean = float(np.mean(boot_rmses)) if boot_rmses else 0.0
-                    mse_mean = float(np.mean(boot_mses)) if boot_mses else 0.0
-                    r2_mean = float(np.mean(boot_r2s)) if boot_r2s else 0.0
-
-                    aggregated_metrics['final_results'] = {
-                        "MAE": (mae_mean, (mae_ci_lo, mae_ci_hi)),
-                        "RMSE": (rmse_mean, (rmse_ci_lo, rmse_ci_hi)),
-                        "MSE": (mse_mean, (mse_ci_lo, mse_ci_hi)),
-                        "R2": (r2_mean, (r2_ci_lo, r2_ci_hi))
-                    }
+                    aggregated_metrics['pooled_final_results'] = (
+                        compute_pooled_regression_final_results(
+                            metrics_aggregator.metrics,
+                            random_state=self.config.get('random_state', 42),
+                        )
+                    )
+                    aggregated_metrics['final_results'] = (
+                        compute_frame_resampled_regression_results(
+                            metrics_aggregator.metrics,
+                            random_state=self.config.get('random_state', 42),
+                        )
+                    )
 
                     evaluation_threshold = self.config.get(
                         'regression_evaluation_threshold'
@@ -1972,20 +2078,14 @@ class PipelineExecutorHDF5:
                     )
 
                     # Prepare metrics for MLflow
-                    regression_metrics_to_log = {
-                        'global_MAE': mae_mean,
-                        'global_MAE_low_CI': mae_ci_lo,
-                        'global_MAE_high_CI': mae_ci_hi,
-                        'global_RMSE': rmse_mean,
-                        'global_RMSE_low_CI': rmse_ci_lo,
-                        'global_RMSE_high_CI': rmse_ci_hi,
-                        'global_MSE': mse_mean,
-                        'global_MSE_low_CI': mse_ci_lo,
-                        'global_MSE_high_CI': mse_ci_hi,
-                        'global_R2': r2_mean,
-                        'global_R2_low_CI': r2_ci_lo,
-                        'global_R2_high_CI': r2_ci_hi,
-                    }
+                    regression_metrics_to_log = {}
+                    for metric_name, result in aggregated_metrics[
+                        'pooled_final_results'
+                    ].items():
+                        value, (low_ci, high_ci) = result
+                        regression_metrics_to_log[f'global_{metric_name}'] = value
+                        regression_metrics_to_log[f'global_{metric_name}_low_CI'] = low_ci
+                        regression_metrics_to_log[f'global_{metric_name}_high_CI'] = high_ci
 
                     # Add per-day average metrics
                     avg_metrics = aggregated_metrics.get('average_metrics', {})
@@ -2045,33 +2145,36 @@ class PipelineExecutorHDF5:
                             r2_global_ci = None
                             mse_global_ci = None
 
-                            if 'final_results' in aggregated_metrics:
-                                if 'MAE' in aggregated_metrics['final_results']:
-                                    mae_val, (mae_ci_lo, mae_ci_hi) = aggregated_metrics['final_results']['MAE']
+                            plot_final_results = aggregated_metrics.get(
+                                'pooled_final_results', {}
+                            )
+                            if plot_final_results:
+                                if 'MAE' in plot_final_results:
+                                    mae_val, (mae_ci_lo, mae_ci_hi) = plot_final_results['MAE']
                                     mae_global_ci = {
                                         'mean': mae_val,
                                         'lower_bound': mae_ci_lo,
                                         'upper_bound': mae_ci_hi
                                     }
 
-                                if 'RMSE' in aggregated_metrics['final_results']:
-                                    rmse_val, (rmse_ci_lo, rmse_ci_hi) = aggregated_metrics['final_results']['RMSE']
+                                if 'RMSE' in plot_final_results:
+                                    rmse_val, (rmse_ci_lo, rmse_ci_hi) = plot_final_results['RMSE']
                                     rmse_global_ci = {
                                         'mean': rmse_val,
                                         'lower_bound': rmse_ci_lo,
                                         'upper_bound': rmse_ci_hi
                                     }
 
-                                if 'R2' in aggregated_metrics['final_results']:
-                                    r2_val, (r2_ci_lo, r2_ci_hi) = aggregated_metrics['final_results']['R2']
+                                if 'R2' in plot_final_results:
+                                    r2_val, (r2_ci_lo, r2_ci_hi) = plot_final_results['R2']
                                     r2_global_ci = {
                                         'mean': r2_val,
                                         'lower_bound': r2_ci_lo,
                                         'upper_bound': r2_ci_hi
                                     }
 
-                                if 'MSE' in aggregated_metrics['final_results']:
-                                    mse_val, (mse_ci_lo, mse_ci_hi) = aggregated_metrics['final_results']['MSE']
+                                if 'MSE' in plot_final_results:
+                                    mse_val, (mse_ci_lo, mse_ci_hi) = plot_final_results['MSE']
                                     mse_global_ci = {
                                         'mean': mse_val,
                                         'lower_bound': mse_ci_lo,
