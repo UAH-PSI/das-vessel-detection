@@ -238,6 +238,18 @@ def parse_args():
         ),
     )
     parser.add_argument(
+        '--classification_target_method',
+        choices=[
+            'legacy', 'central_t', 'first_t', 'last_t', 'majority',
+            'any_class_0', 'all_class_0', 'any_class_1', 'all_class_1',
+        ],
+        default=None,
+        help=(
+            "Classification target and representative timestamp calculation. "
+            "When omitted, existing --use_mid_target/--center_truth behavior is preserved."
+        ),
+    )
+    parser.add_argument(
         '--test_date_start',
         type=str,
         default="2023-06-16",
@@ -443,6 +455,8 @@ def main():
         config['regression_target_method'] = (
             'legacy' if config['use_mid_target'] else 'min'
         )
+    if not config['is_regression'] and config['classification_target_method'] is None:
+        config['classification_target_method'] = 'legacy'
     config['perform_grid_search'] = str2bool(config['perform_grid_search'])
     config['compute_daywise_bootstrap'] = str2bool(config['compute_daywise_bootstrap'])
     config['skip_if_output_exists'] = str2bool(config['skip_if_output_exists'])
@@ -620,7 +634,8 @@ def main():
             time_offset_seconds=time_offset_seconds_val,
             join_higher_classes=join_higher_classes_val,
             use_mid_target=use_mid_target_val,
-            center_truth = center_truth
+            center_truth = center_truth,
+            classification_target_method=config.get('classification_target_method'),
         )
 
     X_reduced, y_reduced, dt_reduced = reducer.reduce_triplets()

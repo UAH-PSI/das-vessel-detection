@@ -74,7 +74,8 @@ class TripletReducer:
     def __init__(self, X, y, dt, ships=None, n_seconds=10, n_overlapping_seconds=None,
                  join_higher_classes=True, average_signals=False, apply_log=True,
                  epsilon=1e-23, time_offset_seconds=None, use_mid_target=False,
-                 sample_seconds=10, center_truth=False):
+                 sample_seconds=10, center_truth=False,
+                 classification_target_method=None):
         """
         Initialize with the data to be reduced and the parameters.
         - X: List of 2D numpy arrays.
@@ -110,6 +111,18 @@ class TripletReducer:
         self.use_mid_target = use_mid_target
         self.sample_seconds = sample_seconds
         self.center_truth = center_truth
+        if classification_target_method is None:
+            classification_target_method = "legacy"
+        valid_target_methods = {
+            "legacy", "central_t", "first_t", "last_t", "majority",
+            "any_class_0", "all_class_0", "any_class_1", "all_class_1",
+        }
+        if classification_target_method not in valid_target_methods:
+            raise ValueError(
+                "Invalid classification_target_method. Expected one of: "
+                + ", ".join(sorted(valid_target_methods))
+            )
+        self.classification_target_method = classification_target_method
 
         # Sort the triplets chronologically before applying any offset and track the original indices
         self._sort_triplets()
@@ -182,6 +195,48 @@ class TripletReducer:
             raise ValueError("Invalid value for average_signals. Expected 'none', 'time', 'channel', or 'time_channel'.")
 
     # @time_it
+    def _select_target_and_datetime(self, group_y, group_dt):
+        """Return the configured classification target and representative time."""
+        method = self.classification_target_method
+        middle = len(group_y) // 2
+
+        if method == "legacy":
+            if self.use_mid_target:
+                if self.center_truth:
+                    target = group_y[middle]
+                else:
+                    target = np.bincount(group_y).argmax()
+            else:
+                target = min(group_y)
+            return target, min(group_dt)
+        if method == "central_t":
+            return group_y[middle], group_dt[middle]
+        if method == "first_t":
+            return group_y[0], group_dt[0]
+        if method == "last_t":
+            return group_y[-1], group_dt[-1]
+
+        timestamp = group_dt[0] + (group_dt[-1] - group_dt[0]) / 2
+        if method == "majority":
+            labels, counts = np.unique(group_y, return_counts=True)
+            winners = labels[counts == counts.max()]
+            central_label = group_y[middle]
+            target = central_label if central_label in winners else winners[0]
+            return target, timestamp
+
+        labels = set(np.unique(group_y).tolist())
+        if not labels.issubset({0, 1}):
+            raise ValueError(
+                f"{method} requires binary classification labels, got {sorted(labels)}"
+            )
+        selected_class = int(method[-1])
+        if method.startswith("any_"):
+            condition_met = np.any(np.asarray(group_y) == selected_class)
+        else:
+            condition_met = np.all(np.asarray(group_y) == selected_class)
+        target = selected_class if condition_met else 1 - selected_class
+        return target, timestamp
+
     def reduce_triplets(self):
         """Performs the reduction of triplets based on n_seconds and n_overlapping_seconds."""
         n_samples_per_group = self.n_seconds // self.sample_seconds
@@ -219,24 +274,13 @@ class TripletReducer:
             if self.join_higher_classes:
                 group_y = np.clip(group_y, 0, 1)
 
-            if self.use_mid_target:
-                if self.center_truth:
-                    mid_index = len(group_y) // 2
-                    min_y = group_y[mid_index]
-                else:
-                    min_y = np.bincount(group_y).argmax()
-            else:
-               min_y = min(group_y)
-
-
-
-
-            # Take the oldest datetime
-            oldest_dt = min(group_dt)
+            target_y, target_dt = self._select_target_and_datetime(
+                group_y, group_dt
+            )
 
             reduced_X.append(avg_X)
-            reduced_y.append(min_y)
-            reduced_dt.append(oldest_dt)
+            reduced_y.append(target_y)
+            reduced_dt.append(target_dt)
 
             if self.ships:
                 closest_list = min(group_ships, key=lambda ship_list: min(ship['distance'] for ship in ship_list))
