@@ -4,6 +4,8 @@ This guide explains how to add a regression or classification model to the exper
 
 The examples below assume commands are run from the repository root. Use `python src/model_experiment_hdf5.py --help` as the authoritative list of CLI defaults for the checked-out revision.
 
+> **Contributions and bug reports are welcome.** This research software is under active development. If you find a bug, an incorrect calculation, misleading documentation, or a reproducibility problem, please report it through the repository [issue tracker](https://github.com/UAH-PSI/das-vessel-detection/issues). Source-code contributions, tests, documentation corrections, and independently reproduced results are especially welcome. Before contributing substantial code changes, please describe them in an issue so their scope and compatibility with the experimental methodology can be discussed.
+
 ## 1. General description and rationale
 
 ### 1.1 Why the framework separates models from experiments
@@ -402,7 +404,7 @@ For a binary confusion matrix `[[TN, FP], [FN, TP]]`, each fold stores:
 
 For a class `c`, `precision = TPc / (TPc + FPc)`, `recall = TPc / (TPc + FNc)`, and `F1 = 2 * precision * recall / (precision + recall)` when denominators are nonzero. Weighted F1 weights each class F1 by its true support.
 
-For date ranges, daily confusion matrices are summed to form a global matrix. Global accuracy, weighted F1, and class-0/class-1 F1 are computed from that matrix. Their 95% intervals come from 1,000 bootstrap resamples of whole daily confusion matrices, with replacement, using seed 42. Global precision and recall are also calculated per class and support-weighted for MLflow.
+For date ranges, daily confusion matrices are summed to form a global matrix. Global accuracy; support-weighted F1, precision, and recall; and per-class F1, precision, and recall are computed from that matrix and stored in `final_results`. Their 95% intervals come from 1,000 bootstrap resamples of whole daily confusion matrices, with replacement, using seed 42. Each resample sums the selected matrices before recalculating the metric.
 
 Global AUC is different: it is the arithmetic mean of daily AUC values. Its 95% interval comes from 1,000 bootstrap resamples of those daily values using `--random_state`; `auc_std` is the population standard deviation across days.
 
@@ -531,6 +533,14 @@ The highest-impact restrictions for model authors are:
 | Presentation and seeds | MLflow confusion labels may contradict `--invert_threshold_logic`, and classification confusion bootstrap uses fixed seed 42. | Determine class meaning from metadata and record the fixed-seed exception. |
 
 Treat these as explicit boundaries when publishing results. A fix should include focused tests and updates to the CLI help, this guide, the detailed issue document, and any affected run/tutorial documentation.
+
+## 7. Disclaimer
+
+This guide describes extension points in research software that may contain bugs, incomplete features, unsupported interfaces, or documentation errors. Results can depend on the dataset version, selected dates, class and threshold conventions, preprocessing, model implementation, random seeds, software dependencies, and evaluation options.
+
+Model authors and users are responsible for validating new implementations, tests, metrics, confidence intervals, and generated artifacts against the saved metadata and the active runner code. Do not assume that an undocumented interface or accepted command-line argument is functional. Results should be independently reproduced where relevant before being used in scientific publications or operational decisions.
+
+The software is provided without warranty under the terms of the repository license. It is not intended as a certified vessel-detection, navigation, safety, surveillance, or emergency-response system, and it must not be relied upon as the sole basis for operational or safety-critical decisions.
 
 <!-- Local Variables: -->
 <!-- mode: markdown -->

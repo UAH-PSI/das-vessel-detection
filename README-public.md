@@ -16,7 +16,9 @@ This repository provides the maintained companion software and reproducibility r
 2. The accepted [IEEE JSTARS article](https://doi.org/10.1109/JSTARS.2026.3716768) describing our vessel-detection and localization methodology and experiments.
 3. The [ArXiV preprint documenting and validating the Marlinks-NS dataset](https://doi.org/10.48550/arXiv.2607.28306) (submitted to be considered for publication as a Data Descriptor in the *Scientific Data* journal).
 
-The complete dataset and its definitive documentation are distributed through Zenodo. This repository contains complementary source code, reproducibility workflows, plotting tools, frequency-band definitions, a small demonstration dataset and supplementary resources, and will be updated with additional source-code tools and reproducibility material.
+The complete dataset and its definitive documentation are distributed through [Zenodo](https://doi.org/10.5281/zenodo.15611778). This repository contains complementary source code, reproducibility workflows, plotting tools, frequency-band definitions, a small demonstration dataset and supplementary resources, and will be updated with additional source-code tools and reproducibility material.
+
+> **Contributions and bug reports are welcome.** This research software is under active development. If you find a bug, an incorrect calculation, misleading documentation, or a reproducibility problem, please report it through the repository [issue tracker](https://github.com/UAH-PSI/das-vessel-detection/issues). Source-code contributions, tests, documentation corrections, and independently reproduced results are especially welcome.
 
 # Project summary
 
@@ -26,16 +28,16 @@ This project investigates the use of DAS on a pre-existing ocean-bottom telecomm
 
 The Marlinks-NS measurements were acquired over ten days using a 28 km submarine optical fiber cable. The released dataset contains processed spatial-spectral DAS features from a selected 2,553 m segment, together with timestamps, closest-vessel distance labels and AIS-derived vessel information.
 
-The original raw DAS recordings, the precise cable route and other sensitive geographical details cannot be released because of data-owner and critical-infrastructure restrictions. Instead, the openly released dataset provides the processed features and metadata needed to reproduce the defined machine-learning tasks. See the Zenodo documentation for the authoritative description of the acquisition, processing, data structure, limitations and permitted use.
+The original raw DAS recordings, the precise cable route and other sensitive geographical details cannot be released because of data-owner and critical-infrastructure restrictions. Instead, the openly released dataset provides the processed features and metadata needed to reproduce the defined machine-learning tasks. See the [Zenodo](https://doi.org/10.5281/zenodo.15611778) documentation for the authoritative description of the acquisition, processing, data structure, limitations and permitted use.
 
 # Dataset availability
 
-The complete released dataset is available from Zenodo:
+The complete released dataset is available from [Zenodo](https://doi.org/10.5281/zenodo.15611778):
 
 > **Marlinks-NS DAS Dataset for vessel detection and distance estimation using distributed acoustic sensing in submarine optical fiber cables**  
 > [https://doi.org/10.5281/zenodo.15611778](https://doi.org/10.5281/zenodo.15611778)
 
-The Zenodo record is the authoritative source for:
+The [Zenodo record](https://doi.org/10.5281/zenodo.15611778) record is the authoritative source for:
 
 - The complete processed HDF5 dataset.
 - The definitive dataset documentation and file inventory.
@@ -65,6 +67,10 @@ The dataset supports two principal tasks:
 1. **Vessel detection:** binary classification obtained by applying a stated distance threshold to the continuous target.
 2. **Vessel-to-cable distance estimation:** regression using the continuous closest-vessel distance.
 
+The numeric meanings of classes 0 and 1 depend on the configured threshold
+polarity; see the [experiment guide](README-run-experiments.md#class-polarity-and-confusion-matrix-convention)
+for the class and confusion-matrix convention.
+
 For the complete and current technical description, refer to the documentation in the [Zenodo record](https://doi.org/10.5281/zenodo.15611778).
 
 # Repository contents
@@ -74,6 +80,8 @@ The main repository resources include:
 | Path                                             | Purpose                                                             |
 |--------------------------------------------------|---------------------------------------------------------------------|
 | `src/`                                           | Dataset loading, partitioning, plotting and reproducibility scripts |
+| `models/`                                        | Public baseline XGBoost classification and regression models        |
+| `scripts/`                                       | Maintained launchers for the best baseline experiment configurations |
 | `data/reduced_dataset_sensor_range_1440_1690.h5` | Ten-minute demonstration extract                                    |
 | `data/fbands.csv`                                | Frequency-band boundaries used for feature extraction               |
 | `data/combined_plot_interval_...0.png`           | Example visualization generated from the demonstration data         |
@@ -81,7 +89,7 @@ The main repository resources include:
 | `logos/`                                         | Funding and acknowledgment graphics                                 |
 | `LICENSE`                                        | License applying to the repository software                         |
 
-The repository is the actively maintained location for software updates and extended reproducibility material. The complete released data remain versioned and preserved in Zenodo.
+This repository is the actively maintained location for software updates and extended reproducibility material. The complete released data remain versioned and preserved in [Zenodo](https://doi.org/10.5281/zenodo.15611778).
 
 
 # Usage and reproducibility workflows
@@ -150,7 +158,7 @@ The output directory contains:
 - `datetimes_train.npy` and `datetimes_test.npy`.
 - When available, `ship_info_train.npz` and `ship_info_test.npz`.
 
-Use the HDF5 file downloaded from Zenodo for complete experiments. 
+Use the HDF5 file downloaded from [Zenodo record](https://doi.org/10.5281/zenodo.15611778) for complete experiments.
 
 ## Plot energy features and vessel distance
 
@@ -170,14 +178,41 @@ Example output:
 
 The Zenodo `src.zip` archive additionally provides small standalone examples for inspecting the HDF5 structure, loading all data or selected slices, checking consistency between full and sliced loading, and generating day-wise partitions.
 
-## AI/ML workflows (work in progress)
+## Baseline AI/ML experiments (supporting the [JSTARS journal](#jstars-cite))
 
-This section will provide reproducibility scripts for the model-training and evaluation procedures reported in the associated studies.
+The public repository includes the experiment runner and the baseline XGBoost models for vessel detection (classification) and vessel-distance estimation (regression) that are referenced in the [JSTARS journal](#2.-ieee-jstars-accepted-article). The source code used in the paper experiments was heavily modified to ease its use and to be adapted to the current experimental framework distributed in this repository. This is the reason why there will be minor variations in the performance results reported (partly due to a different random seed used in the original code).
+
+Run commands from the repository root after completing the [installation](#installation).
+
+The included ten-minute HDF5 extract is useful for loading and plotting checks, but it does not contain the complete set of daily folds. Download the full dataset from [Zenodo](https://doi.org/10.5281/zenodo.15611778) before running the all-fold experiments, then either place it at `data/dataset_sensor_range_1440_1690_0.h5` or change `--h5_path` in the commands.
+
+Start with these documents:
+
+| Guide                                                                  | Purpose                                                                    |
+|------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| [README-run-experiments.md](README-run-experiments.md)                 | Installation, baseline commands, result files, MLflow, and result analysis |
+| [README-develop-models.md](README-develop-models.md)                   | Reference documentation for adding classification or regression models     |
+| [README-tutorial-develop-models.md](README-tutorial-develop-models.md) | Step-by-step model-development tutorial                                    |
+
+The three maintained baseline launchers that replicate the best experiments in the [JSTARS journal](#2.-ieee-jstars-accepted-article) are:
+
+- `scripts/run_xgb_classif_baseline_all_folds-best.sh`: For threshold = 1,000 m, achieves global F1 = 90.11%, class 0 F1 = 84.23%, class 1 F1 = 92.93%, accuracy = 90.24%, and AUC = 94.42%.
+- `scripts/run_xgb_regress_baseline_all_folds-best-1000.sh`: For threshold = 1,000 m, achieves global MAE = 141 m.
+- `scripts/run_xgb_regress_baseline_all_folds-best-5000.sh`: For threshold = 5,000 m, achieves global MAE = 558 m.
+
+Current date-range result files use `final_results` consistently for the principal global metrics in both tasks. Classification values are calculated from the summed fold confusion matrix (apart from mean fold AUC), and regression point estimates pool all evaluated frames; their 95% intervals resample complete folds. Regression additionally retains the separately labeled individual-frame bootstrap alternative in `frame_resampled_results`.
+
+They use:
+
+- `models/baseline_xgb_classification_model.py`;
+- `models/baseline_xgb_regression_model.py`;
+- `src/model_experiment_hdf5.py`.
+
 
 
 # Supplementary material
 
-The [project supplementary website](https://geintra-uah.org/psi/index.html) provides additional material supporting the JSTARS study, including visual demonstrations of the method under different conditions.
+The [JSTARS paper supplementary website](https://geintra-uah.org/psi/index.html) provides additional material supporting the [JSTARS study](#jstars-cite), including visual demonstrations of the method under different conditions.
 
 
 
@@ -185,21 +220,13 @@ The [project supplementary website](https://geintra-uah.org/psi/index.html) prov
 
 If you use the dataset, repository software, methodology, experimental results or associated supplementary resources, please cite the following related research outputs:
 
-1. The published [Marlinks-NS DAS dataset deposited in Zenodo](https://doi.org/10.5281/zenodo.15611778).
-2. The accepted [IEEE JSTARS article](https://doi.org/10.1109/JSTARS.2026.3716768) describing our vessel-detection and localization methodology and experiments.
-3. The [ArXiV preprint documenting and validating the Marlinks-NS dataset](https://doi.org/...) (submitted to be considered for publication as a Data Descriptor to the *Scientific Data* journal).
-
-## 1. Zenodo dataset
-
+- <a id="zenodo-cite"></a>The published [Marlinks-NS DAS dataset deposited in Zenodo](https://doi.org/10.5281/zenodo.15611778).
 > E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, M. R. Fernández-Ruiz, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Marlinks-NS DAS Dataset for vessel detection and distance estimation using distributed acoustic sensing in submarine optical fiber cables”, Zenodo. doi: [10.5281/zenodo.15611778](https://doi.org/10.5281/zenodo.15611778)
-
-## 2. IEEE JSTARS accepted article
-
+- <a id="jstars-cite">The accepted [IEEE JSTARS article](https://doi.org/10.1109/JSTARS.2026.3716768) describing our vessel-detection and localization methodology and experiments.
 > E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables”. Accepted for publication in the IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing, 2026. doi: [10.1109/JSTARS.2026.3716768](https://doi.org/10.1109/JSTARS.2026.37167)
-
-## 3. ArXiV preprint (submitted to be considered for publication as a Data Descriptor to the Scientific Data journal):
-
+- <a id="data-descriptor-cite">The [ArXiV preprint documenting and validating the Marlinks-NS dataset](https://doi.org/...) (submitted to be considered for publication as a Data Descriptor to the *Scientific Data* journal).
 > E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, *“A Distributed Acoustic Sensing Dataset for Vessel Detection and Localization in Submarine Cable Protection”*. ArXiv preprint arXiv:2509.11614. doi: [10.48550/arXiv.2607.28306](https://doi.org/10.48550/arXiv.2607.28306)
+
 
 
 # Licenses
@@ -227,6 +254,14 @@ The authors acknowledge the computing resources provided by Artemisa, funded by 
 
 ![Funding sources](logos/funding-logos.png)
 
+# Disclaimer
+
+This repository contains research software and supporting documentation. Although the authors aim to provide correct and reproducible implementations, the software may contain bugs, incomplete features, or documentation errors. Results can depend on the dataset version, selected dates, class and threshold conventions, preprocessing, model configuration, random seeds, software dependencies, and evaluation options.
+
+Users are responsible for verifying that the code, metrics, confidence intervals, and generated artifacts are appropriate for their intended use. Results should be checked against the saved experiment metadata and, where relevant, independently reproduced before being used in scientific publications or operational decisions.
+
+The software is provided without warranty under the terms of the repository license. It is not intended as a certified vessel-detection, navigation, safety, surveillance, or emergency-response system, and it must not be relied upon as the sole basis for operational or safety-critical decisions.
+
 # Contact and issue reporting
 
 For questions about the dataset or the associated studies, please contact:
@@ -241,4 +276,3 @@ For source-code issues, contributions, or feature requests, please use the repos
 <!-- mode: markdown -->
 <!-- ispell-local-dictionary: "en_US" -->
 <!-- End: -->
-

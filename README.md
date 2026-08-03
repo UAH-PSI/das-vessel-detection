@@ -16,6 +16,8 @@ This repository provides the maintained companion software and reproducibility r
 
 The complete dataset and its definitive documentation are distributed through [Zenodo](https://doi.org/10.5281/zenodo.15611778). This repository contains complementary source code, reproducibility workflows, plotting tools, frequency-band definitions, a small demonstration dataset and supplementary resources, and will be updated with additional source-code tools and reproducibility material.
 
+> **Contributions and bug reports are welcome.** This research software is under active development. If you find a bug, an incorrect calculation, misleading documentation, or a reproducibility problem, please report it through the repository [issue tracker](https://github.com/UAH-PSI/das-vessel-detection/issues). Source-code contributions, tests, documentation corrections, and independently reproduced results are especially welcome.
+
 ## Table of contents
 
 - [Project summary](#project-summary)
@@ -31,6 +33,7 @@ The complete dataset and its definitive documentation are distributed through [Z
 - [How to cite](#how-to-cite)
 - [Licenses](#licenses)
 - [Funding and acknowledgements](#funding-and-acknowledgements)
+- [Disclaimer](#disclaimer)
 - [Contact and issue reporting](#contact-and-issue-reporting)
 
 ## Project summary
@@ -171,7 +174,7 @@ The output directory contains:
 - `datetimes_train.npy` and `datetimes_test.npy`.
 - When available, `ship_info_train.npz` and `ship_info_test.npz`.
 
-Use the HDF5 file downloaded from [Zenodo record](https://doi.org/10.5281/zenodo.15611778) for complete experiments. 
+Use the HDF5 file downloaded from [Zenodo record](https://doi.org/10.5281/zenodo.15611778) for complete experiments.
 
 ### Plot energy features and vessel distance
 
@@ -212,6 +215,8 @@ The three maintained baseline launchers that replicate the best experiments in t
 - `scripts/run_xgb_classif_baseline_all_folds-best.sh`: For threshold = 1,000 m, achieves global F1 = 90.11%, class 0 F1 = 84.23%, class 1 F1 = 92.93%, accuracy = 90.24%, and AUC = 94.42%.
 - `scripts/run_xgb_regress_baseline_all_folds-best-1000.sh`: For threshold = 1,000 m, achieves global MAE = 141 m.
 - `scripts/run_xgb_regress_baseline_all_folds-best-5000.sh`: For threshold = 5,000 m, achieves global MAE = 558 m.
+
+Current date-range result files use `final_results` consistently for the principal global metrics in both tasks. Classification values are calculated from the summed fold confusion matrix (apart from mean fold AUC), and regression point estimates pool all evaluated frames; their 95% intervals resample complete folds. Regression additionally retains the separately labeled individual-frame bootstrap alternative in `frame_resampled_results`.
 
 They use:
 
@@ -264,6 +269,14 @@ This work was partially supported by:
 The authors acknowledge the computing resources provided by Artemisa, funded by the European Union ERDF and Comunitat Valenciana, and the technical support provided by the Instituto de Física Corpuscular, IFIC (CSIC–University of Valencia).
 
 ![Funding sources](logos/funding-logos.png)
+
+## Disclaimer
+
+This repository contains research software and supporting documentation. Although the authors aim to provide correct and reproducible implementations, the software may contain bugs, incomplete features, or documentation errors. Results can depend on the dataset version, selected dates, class and threshold conventions, preprocessing, model configuration, random seeds, software dependencies, and evaluation options.
+
+Users are responsible for verifying that the code, metrics, confidence intervals, and generated artifacts are appropriate for their intended use. Results should be checked against the saved experiment metadata and, where relevant, independently reproduced before being used in scientific publications or operational decisions.
+
+The software is provided without warranty under the terms of the repository license. It is not intended as a certified vessel-detection, navigation, safety, surveillance, or emergency-response system, and it must not be relied upon as the sole basis for operational or safety-critical decisions.
 
 ## Contact and issue reporting
 

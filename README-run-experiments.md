@@ -11,6 +11,8 @@ These are examples of the execution workflow, not universal guarantees that the 
 
 For model implementation details, see `README-develop-models.md`. For a guided model-development exercise, see `README-tutorial-develop-models.md`.
 
+> **Contributions and bug reports are welcome.** This research software is under active development. If you find a bug, an incorrect calculation, misleading documentation, or a reproducibility problem, please report it through the repository [issue tracker](https://github.com/UAH-PSI/das-vessel-detection/issues). Source-code contributions, tests, documentation corrections, and independently reproduced results are especially welcome. Before contributing substantial code changes, please describe them in an issue so their scope and compatibility with the experimental methodology can be discussed.
+
 ## 1. Quick start
 
 Run commands from the repository root.
@@ -405,7 +407,7 @@ python src/print_experiment_results.py \
   --csv classification-report.csv
 ```
 
-The report detects task and scope and also writes a flattened comparison CSV. For classification, it prints pooled global metrics with complete-fold bootstrap intervals, per-class precision/recall/F1, the fold-weighted classification report, the summed confusion matrix, and individual results by day/fold. For regression, it prints pooled global metrics with complete-fold bootstrap intervals, the legacy individual-frame bootstrap results, equal-fold and support-weighted aggregate metrics, individual results by day/fold, and optional threshold-specific results.
+The report detects task and scope and also writes a flattened comparison CSV. For classification, it prints pooled global metrics with complete-fold bootstrap intervals, per-class precision/recall/F1, the fold-weighted classification report, the summed confusion matrix, and individual results by day/fold. For regression, it prints pooled global metrics with complete-fold bootstrap intervals, the alternative individual-frame bootstrap results, equal-fold and support-weighted aggregate metrics, individual results by day/fold, and optional threshold-specific results.
 
 ### 9.2 Compare compatible experiments
 
@@ -650,11 +652,11 @@ Store that information beside the experiment manifest or execution log. The auto
 
 For classification, report a statement such as:
 
-> Binary XGBoost classification used a 1,000 m threshold, 50-second features, channel averaging, five-instance majority-vote evaluation, and leave-one-day- out folds from 16–25 June 2023. We report global weighted F1, accuracy, AUC, per-class precision/recall/F1, confusion matrix, support, and 95% bootstrap intervals.
+> Binary XGBoost classification used a 1,000 m threshold, 50-second features, channel averaging, five-instance majority-vote evaluation, and leave-one-day-out folds from 16–25 June 2023. We report pooled global weighted F1, weighted precision, weighted recall, accuracy, AUC, per-class precision/recall/F1, the summed confusion matrix, support, and 95% complete-fold bootstrap intervals.
 
 For regression:
 
-> XGBoost regression was trained and evaluated within the stated distance range using 50-second features, channel averaging, five-instance mean evaluation, and leave-one-day-out folds from 16–25 June 2023. We report global MAE, RMSE, MSE, R2, residual diagnostics, support, and 95% bootstrap intervals.
+> XGBoost regression was trained and evaluated within the stated distance range using 50-second features, channel averaging, five-instance mean evaluation, and leave-one-day-out folds from 16–25 June 2023. We report pooled-frame MAE, RMSE, MSE, and R2 point estimates with 95% complete-fold bootstrap intervals, together with residual diagnostics and support.
 
 Replace these descriptions with the exact metadata from the retained Joblib. This closes the chain from command, through stored configuration and metrics, to a reproducible scientific claim.
 
@@ -665,6 +667,14 @@ The active pipeline accepts the following compatibility arguments but does not u
 - `--model_output_suffix` does not change the trained-model artifact path; use a unique `--run_name` instead.
 - `--vessel_joblib_path` does not affect targets or model execution.
 - `--skip_if_output_exists` does not check for existing outputs or skip a run; rely on automatically unique paths and do not reuse an explicit `--joblib_save_file`.
+
+## 17. Disclaimer
+
+This guide describes research software that may contain bugs, incomplete features, or documentation errors. Experiment results can depend on the dataset version, selected dates, class and threshold conventions, preprocessing, model configuration, random seeds, software dependencies, and evaluation options.
+
+Users are responsible for confirming that compared experiments use compatible populations and evaluation settings, and for verifying metrics, confidence intervals, class polarity, support, and generated artifacts against the saved metadata. Results should be independently reproduced where relevant before being used in scientific publications or operational decisions.
+
+The software is provided without warranty under the terms of the repository license. It is not intended as a certified vessel-detection, navigation, safety, surveillance, or emergency-response system, and it must not be relied upon as the sole basis for operational or safety-critical decisions.
 
 <!-- Local Variables: -->
 <!-- mode: markdown -->

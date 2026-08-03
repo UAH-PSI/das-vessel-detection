@@ -12,6 +12,8 @@ The goal is to teach the development workflow. For an exhaustive description of 
 
 All commands in this tutorial are run from the repository root.
 
+> **Contributions and bug reports are welcome.** This research software is under active development. If you find a bug, an incorrect calculation, misleading documentation, or a reproducibility problem, please report it through the repository [issue tracker](https://github.com/UAH-PSI/das-vessel-detection/issues). Source-code contributions, tests, documentation corrections, and independently reproduced results are especially welcome. Before contributing substantial code changes, please describe them in an issue so their scope and compatibility with the experimental methodology can be discussed.
+
 ## 1. Choose a development path
 
 There are two independent decisions:
@@ -465,16 +467,18 @@ The file contains:
 }
 ```
 
-For date ranges, `metrics_by_day` contains every fold. `final_results` contains the principal global metrics with 95% bootstrap intervals.
+For date ranges, `metrics_by_day` contains every fold. For both tasks, `final_results` contains the principal global metrics and their 95% complete-fold bootstrap intervals. There is no separate generic confidence-interval dictionary: each result stores its point estimate together with the interval produced by its stated resampling procedure.
 
-Classification `final_results` contains global weighted F1, accuracy, optional AUC, and F1 by class. Regression contains MAE, RMSE, MSE, and R2. The detailed per-day report remains available in `metrics_by_day`.
+Classification `final_results` contains accuracy; support-weighted F1, precision, and recall; per-class F1, precision, and recall; and optional AUC. The confusion-matrix metrics use the matrix obtained by summing all fold matrices. Each bootstrap replicate samples complete folds with replacement, sums their matrices, and recalculates the metric. AUC instead uses the arithmetic mean of fold AUC values and resamples those fold values.
+
+Regression `final_results` contains MAE, RMSE, MSE, and R2. Its point estimates pool all evaluated frames, while each interval resamples complete folds with replacement and recalculates the metric from the selected folds. Regression also stores `frame_resampled_results`, an explicitly separate alternative that bootstraps individual pooled frames. Threshold-specific frame-bootstrap values are stored under `regression_threshold_evaluation[threshold]["frame_resampled_results"]`. The detailed per-day results remain in `metrics_by_day`.
 
 ### 10.2 Use CSV for a compact report
 
 The date-range run writes `metrics.csv` beside `metrics.joblib`.
 
-- Classification CSV contains flattened daily classification reports, simple and fold-weighted summaries, and bootstrap final results. AUC and confusion matrices remain in Joblib/MLflow.
-- Regression CSV contains daily and aggregate MAE, support, RMSE, R2, and MAE_STD, plus threshold-specific columns when requested. Other regression diagnostics remain in Joblib.
+- Classification CSV contains flattened daily classification reports, simple and fold-weighted summaries, and a `bootstrap final results` row populated from canonical `final_results`. AUC and confusion matrices remain in Joblib/MLflow.
+- Regression CSV contains daily and aggregate MAE, support, RMSE, R2, and MAE_STD, followed by separate `final results` and `frame-resampled results` rows. Threshold-specific columns are added when requested. MSE and other regression diagnostics remain in Joblib.
 
 ### 10.3 Use MLflow to compare runs
 
@@ -484,7 +488,7 @@ The default tracking database is `sqlite:///mlflow.db`. Start the UI with:
 python -m mlflow ui --backend-store-uri sqlite:///mlflow.db
 ```
 
-Open `http://127.0.0.1:5000`, select the experiment, and compare runs by their parameters and global metrics. The artifacts include result files, plots, the last-fold model, and the execution log for a date-range run.
+Open `http://127.0.0.1:5000`, select the experiment, and compare runs by their parameters and canonical global metrics from `final_results`. Regression `frame_resampled_results` is retained in Joblib and the textual report as an alternative, not promoted as the principal MLflow result. The artifacts include result files, plots, the last-fold model, and the execution log for a date-range run.
 
 ### 10.4 Make comparisons scientifically fair
 
@@ -586,6 +590,14 @@ Before publishing a new model:
 10. Update documentation if the model requires extending the evaluator or its binary/output contracts.
 
 At that point, the small model file defines the algorithm, while the shared runner and stored metadata provide a reproducible account of how it was tested.
+
+## 14. Disclaimer
+
+This tutorial provides educational examples for research software that may contain bugs, incomplete features, or documentation errors. The examples are starting points for development, not validated production models. Results can depend on the dataset version, selected dates, class and threshold conventions, preprocessing, model implementation, random seeds, software dependencies, and evaluation options.
+
+Users are responsible for validating example-derived models, metrics, confidence intervals, and generated artifacts against the saved metadata and the active runner code. Results should be independently reproduced where relevant before being used in scientific publications or operational decisions.
+
+The software is provided without warranty under the terms of the repository license. It is not intended as a certified vessel-detection, navigation, safety, surveillance, or emergency-response system, and it must not be relied upon as the sole basis for operational or safety-critical decisions.
 
 <!-- Local Variables: -->
 <!-- mode: markdown -->
