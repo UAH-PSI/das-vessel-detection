@@ -3,7 +3,7 @@
 # Variables
 BASENAME := README
 MD       := $(BASENAME).md
-YAML     := $(BASENAME).yaml
+YAML     := docs/$(BASENAME).yaml
 BUILD_DIR := build
 HTML     := $(BUILD_DIR)/$(BASENAME).html
 TEX      := $(BUILD_DIR)/$(BASENAME).tex
