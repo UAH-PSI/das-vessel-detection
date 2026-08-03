@@ -199,7 +199,7 @@ The Zenodo `src.zip` archive additionally provides small standalone examples for
 
 ### Baseline AI/ML experiments (supporting the [JSTARS journal](#jstars-cite))
 
-The public repository includes the experiment runner and the baseline XGBoost models for vessel detection (classification) and vessel-distance estimation (regression) that are referenced in the [JSTARS journal](#2.-ieee-jstars-accepted-article). The source code used in the paper experiments was heavily modified to ease its use and to be adapted to the current experimental framework distributed in this repository. This is the reason why there will be minor variations in the performance results reported (partly due to a different random seed used in the original code).
+The public repository includes the experiment runner and the baseline XGBoost models for vessel detection (classification) and vessel-distance estimation (regression) that are referenced in the [JSTARS journal](#2.-ieee-jstars-accepted-article). The source code used in the paper experiments was heavily modified to ease its use and to be adapted to the current experimental framework distributed in this repository. We are also working in fixing inconsistencies and improving the general and specific capabitilities. This is the reason why there will be minor variations in the performance results reported. When possible, we will provide reproducibility scripts.
 
 Run commands from the repository root after completing the [installation](#installation).
 
