@@ -229,6 +229,15 @@ def parse_args():
     parser.add_argument('--balance_classes', type=str, default='unbalanced', choices=['unbalanced', 'smote', 'adasyn', 'naive', 'undersample'], help="Class balancing method")
     parser.add_argument('--use_mid_target', type=str, default="true", choices=["true", "false"], help="Use midpoint as target in reduction?")
     parser.add_argument(
+        '--regression_target_method',
+        choices=['legacy', 'central_t', 'first_t', 'last_t', 'min', 'mean', 'median'],
+        default=None,
+        help=(
+            "Regression target and representative timestamp calculation. "
+            "When omitted, --use_mid_target true selects legacy and false selects min."
+        ),
+    )
+    parser.add_argument(
         '--test_date_start',
         type=str,
         default="2023-06-16",
@@ -430,6 +439,10 @@ def main():
     config['join_higher_classes'] = str2bool(config['join_higher_classes'])
     config['balance_test'] = str2bool(config['balance_test'])
     config['use_mid_target'] = str2bool(config['use_mid_target'])
+    if config['is_regression'] and config['regression_target_method'] is None:
+        config['regression_target_method'] = (
+            'legacy' if config['use_mid_target'] else 'min'
+        )
     config['perform_grid_search'] = str2bool(config['perform_grid_search'])
     config['compute_daywise_bootstrap'] = str2bool(config['compute_daywise_bootstrap'])
     config['skip_if_output_exists'] = str2bool(config['skip_if_output_exists'])
@@ -593,6 +606,7 @@ def main():
             time_offset_seconds=time_offset_seconds_val,
             threshold=config.get('regression_threshold', None),
             use_mid_target=use_mid_target_val,
+            regression_target_method=config.get('regression_target_method'),
         )
     else: # Classification
         logger.info("Using TripletReducer for classification task.")

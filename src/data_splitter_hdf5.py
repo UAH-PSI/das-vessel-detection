@@ -257,6 +257,7 @@ class TripletRegressionReducer:
                  time_offset_seconds=7200,
                  threshold=None, eliminate_within_range=None,
                  use_mid_target=False,
+                 regression_target_method=None,
                  sample_seconds=10):
         """
         Initialize with the data to be reduced and the parameters.
@@ -287,6 +288,17 @@ class TripletRegressionReducer:
         self.threshold = threshold
         self.eliminate_within_range = eliminate_within_range
         self.use_mid_target = use_mid_target
+        if regression_target_method is None:
+            regression_target_method = "legacy" if use_mid_target else "min"
+        valid_target_methods = {
+            "legacy", "central_t", "first_t", "last_t", "min", "mean", "median"
+        }
+        if regression_target_method not in valid_target_methods:
+            raise ValueError(
+                "Invalid regression_target_method. Expected one of: "
+                + ", ".join(sorted(valid_target_methods))
+            )
+        self.regression_target_method = regression_target_method
         self.sample_seconds = sample_seconds
 
         # Sort the triplets chronologically before applying any offset
@@ -404,6 +416,34 @@ class TripletRegressionReducer:
             raise ValueError("Invalid value for average_signals. Expected 'none', 'time', 'channel', or 'time_channel'.")
 
     # @time_it
+    def _select_target_and_datetime(self, group_y, group_dt):
+        """Return the configured regression target and its representative time."""
+        method = self.regression_target_method
+        middle = len(group_y) // 2
+
+        if method == "legacy":
+            return group_y[middle], min(group_dt)
+        if method == "central_t":
+            if len(group_y) % 2:
+                return group_y[middle], group_dt[middle]
+            target = np.mean([group_y[middle - 1], group_y[middle]])
+            timestamp = group_dt[middle - 1] + (
+                group_dt[middle] - group_dt[middle - 1]
+            ) / 2
+            return target, timestamp
+        if method == "first_t":
+            return group_y[0], group_dt[0]
+        if method == "last_t":
+            return group_y[-1], group_dt[-1]
+        if method == "min":
+            target_index = int(np.argmin(group_y))
+            return group_y[target_index], group_dt[target_index]
+
+        timestamp = group_dt[0] + (group_dt[-1] - group_dt[0]) / 2
+        if method == "mean":
+            return np.mean(group_y), timestamp
+        return np.median(group_y), timestamp
+
     def reduce_triplets(self):
         """Performs the reduction of triplets based on n_seconds and n_overlapping_seconds."""
         n_samples_per_group = self.n_seconds // self.sample_seconds
@@ -441,23 +481,9 @@ class TripletRegressionReducer:
             #     avg_X = np.log(np.maximum(avg_X, self.epsilon))
 
 
-            ## USING MEAN TARGET
-            # target_y = np.int32(np.mean(group_y)) if self.use_mid_target else min(group_y)
-
-            ## USING MEDIAN TARGET
-            # target_y = np.int32(np.median(group_y)) if self.use_mid_target else min(group_y)
-
-            ## USING CENTRAL TARGET
-            if self.use_mid_target:
-                # Select the most central value in group_y
-                mid_index = len(group_y) // 2
-                target_y = group_y[mid_index]
-            else:
-                target_y = min(group_y)
-
-
-
-            oldest_dt = min(group_dt)
+            target_y, target_dt = self._select_target_and_datetime(
+                group_y, group_dt
+            )
 
             if group_ships:
                 flattened_ships = [ship for sublist in group_ships for ship in sublist]
@@ -466,7 +492,7 @@ class TripletRegressionReducer:
 
             reduced_X.append(avg_X)
             reduced_y.append(target_y)
-            reduced_dt.append(oldest_dt)
+            reduced_dt.append(target_dt)
 
             i += n_samples_per_group - n_overlap_samples
 
