@@ -376,7 +376,7 @@ Its top-level structure is:
 }
 ```
 
-Metadata records the resolved command configuration without the large `X`, `y`, and datetime arrays. Date-range metrics include `metrics_by_day`, aggregate summaries, confidence intervals, and `final_results`. New multi-fold regression results also include `pooled_final_results`, which contains the principal pooled metrics and complete-fold bootstrap intervals. Regression `final_results` retains the individual-frame bootstrap results. Prediction and residual arrays are retained where configured, so Joblib may be large.
+Metadata records the resolved command configuration without the large `X`, `y`, and datetime arrays. Date-range metrics include `metrics_by_day`, aggregate summaries, and `final_results`. For both tasks, `final_results` contains the principal pooled metrics and complete-fold bootstrap intervals. Regression additionally stores its individual-frame bootstrap alternative in `frame_resampled_results`. Prediction and residual arrays are retained where configured, so Joblib may be large.
 
 ### 8.2 CSV is a compact date-range report
 
@@ -506,9 +506,9 @@ The uploaded 1,000 m, 50-second time-channel result has global MAE about `151.28
 
 For classification date ranges, `final_results` contains the principal pooled metrics and 95% intervals. Accuracy, precision, recall, F1, and per-class intervals resample complete daily confusion matrices; AUC is the mean daily AUC with complete days resampled for its interval.
 
-For regression date ranges, prefer `pooled_final_results`: its point estimates pool all evaluated frames, and its intervals resample complete folds with replacement before recalculating each metric. Regression `final_results` retains the legacy alternative that resamples individual pooled frames; `src/print_experiment_results.py` presents it separately as "Frame-resampled results and 95% confidence intervals."
+For regression date ranges, `final_results` likewise contains the principal results: its point estimates pool all evaluated frames, and its intervals resample complete folds with replacement before recalculating each metric. The `frame_resampled_results` section retains the alternative that resamples individual pooled frames; `src/print_experiment_results.py` presents it separately as "Frame-resampled results and 95% confidence intervals." Threshold-specific frame-bootstrap values use the same explicit `frame_resampled_results` name inside `regression_threshold_evaluation`.
 
-The separate `confidence_intervals` field uses a different normal-interval calculation. Do not silently substitute it for either task's principal pooled results.
+The result file does not store a separate generic confidence-interval section: each result entry carries the interval produced by its stated resampling procedure alongside its point estimate.
 
 ### 10.4 Always report support and interval
 

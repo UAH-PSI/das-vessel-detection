@@ -178,14 +178,16 @@ def add_confusion_metrics(row: dict[str, Any], matrix: Any) -> None:
     row["global_weighted_f1"] = weighted_f1_sum / total if total else None
 
 
-def add_final_result_metrics(row: dict[str, Any], final_results: dict[str, Any]) -> None:
+def add_final_result_metrics(
+    row: dict[str, Any], final_results: dict[str, Any], prefix: str = "bootstrap"
+) -> None:
     """Flatten bootstrap-style ``(value, (lower, upper))`` results."""
     for metric, result in final_results.items():
         if metric == "per_class":
             continue
         if isinstance(result, (tuple, list)) and len(result) == 2:
             value, interval = result
-            name = f"bootstrap_{safe_name(metric)}"
+            name = f"{prefix}_{safe_name(metric)}"
             row[name] = scalar_value(value)
             if isinstance(interval, (tuple, list)) and len(interval) == 2:
                 row[f"{name}_ci_lower"] = scalar_value(interval[0])
@@ -194,30 +196,11 @@ def add_final_result_metrics(row: dict[str, Any], final_results: dict[str, Any])
     for label, result in final_results.get("per_class", {}).items():
         if isinstance(result, (tuple, list)) and len(result) == 2:
             value, interval = result
-            name = f"bootstrap_class_{safe_name(label)}_f1"
+            name = f"{prefix}_class_{safe_name(label)}_f1"
             row[name] = scalar_value(value)
             if isinstance(interval, (tuple, list)) and len(interval) == 2:
                 row[f"{name}_ci_lower"] = scalar_value(interval[0])
                 row[f"{name}_ci_upper"] = scalar_value(interval[1])
-
-
-def add_fold_based_intervals(row: dict[str, Any], intervals: dict[str, Any]) -> None:
-    for metric, values in intervals.items():
-        if not isinstance(values, dict):
-            continue
-        name = f"fold_based_{safe_name(metric)}"
-        key_map = {
-            "mean": "mean",
-            "lower_bound": "ci_lower",
-            "upper_bound": "ci_upper",
-            "margin_of_error": "margin_of_error",
-            "lower": "ci_lower",
-            "upper": "ci_upper",
-        }
-        for source_key, target_key in key_map.items():
-            scalar = scalar_value(values.get(source_key))
-            if scalar is not None:
-                row[f"{name}_{target_key}"] = scalar
 
 
 def add_nested_confidence_intervals(
@@ -287,9 +270,13 @@ def build_comparison_row(result: dict[str, Any]) -> dict[str, Any]:
     }
 
     add_final_result_metrics(row, metrics.get("final_results", {}))
-    add_fold_based_intervals(row, metrics.get("confidence_intervals", {}))
+    add_final_result_metrics(
+        row,
+        metrics.get("frame_resampled_results", {}),
+        prefix="frame_resampled",
+    )
     for key, value in metrics.items():
-        if key not in {"final_results", "confidence_intervals"}:
+        if key not in {"final_results", "frame_resampled_results"}:
             add_nested_confidence_intervals(row, value, (str(key),))
 
     if task == "classification":
@@ -330,15 +317,15 @@ def build_comparison_row(result: dict[str, Any]) -> dict[str, Any]:
             )
             row["threshold_support"] = scalar_value(threshold_result.get("SUPPORT"))
             threshold_final: dict[str, Any] = {}
-            if isinstance(threshold_result.get("final_results"), dict):
-                threshold_final = threshold_result["final_results"]
+            if isinstance(threshold_result.get("frame_resampled_results"), dict):
+                threshold_final = threshold_result["frame_resampled_results"]
             for metric, result_value in threshold_final.items():
                 if (
                     isinstance(result_value, (tuple, list))
                     and len(result_value) == 2
                 ):
                     value, interval = result_value
-                    name = f"threshold_bootstrap_{safe_name(metric)}"
+                    name = f"threshold_frame_resampled_{safe_name(metric)}"
                     row[name] = scalar_value(value)
                     if isinstance(interval, (tuple, list)) and len(interval) == 2:
                         row[f"{name}_ci_lower"] = scalar_value(interval[0])
@@ -413,7 +400,6 @@ def add_canonical_performance_metrics(row: dict[str, Any], task: str) -> None:
             threshold_value = first_available(
                 row,
                 (
-                    f"threshold_bootstrap_{metric}",
                     f"threshold_single_{metric}",
                     f"threshold_fold_weighted_{metric}",
                 ),
@@ -508,12 +494,19 @@ def load_result(path: Path) -> dict[str, Any]:
     if not isinstance(metrics, dict):
         raise ValueError(f"{path}: expected metrics to be a dictionary.")
     task = detect_task(metrics, metadata)
+    scope = detect_scope(metrics)
+    if task == "regression" and scope == "multi-fold":
+        if "pooled_final_results" in metrics or "frame_resampled_results" not in metrics:
+            raise ValueError(
+                f"{path}: obsolete multi-fold regression result layout; regenerate the "
+                "experiment with the current pipeline."
+            )
     return {
         "path": path,
         "metrics": metrics,
         "metadata": metadata,
         "task": task,
-        "scope": detect_scope(metrics),
+        "scope": scope,
     }
 
 
@@ -768,92 +761,8 @@ def metric_table(metrics: dict[str, Any], decimals: int) -> list[list[str]]:
     return [[key, format_value(metrics[key], decimals)] for key in preferred if key in metrics]
 
 
-def pooled_regression_metrics(folds: list[dict[str, Any]]) -> dict[str, float]:
-    """Calculate regression metrics after pooling the observations in ``folds``."""
-    usable = []
-    for fold in folds:
-        try:
-            support = int(fold.get("SUPPORT", 0))
-            mae = float(fold["MAE"])
-            mse = float(fold["MSE"])
-        except (KeyError, TypeError, ValueError):
-            continue
-        if support > 0 and math.isfinite(mae) and math.isfinite(mse):
-            usable.append((fold, support, mae, mse))
-
-    total_support = sum(support for _, support, _, _ in usable)
-    if not total_support:
-        return {}
-
-    mae = sum(value * support for _, support, value, _ in usable) / total_support
-    mse = sum(value * support for _, support, _, value in usable) / total_support
-    result = {"MAE": mae, "RMSE": math.sqrt(mse), "MSE": mse}
-
-    # Reconstruct pooled R2 from the fold sufficient statistics. For each fold,
-    # R2 = 1 - SSE/SST, while MEAN_TARGET and SUPPORT provide the between-fold
-    # correction needed to express every SST around the global target mean.
-    r2_parts = []
-    for fold, support, _, fold_mse in usable:
-        try:
-            fold_r2 = float(fold["R2"])
-            target_mean = float(fold["MEAN_TARGET"])
-        except (KeyError, TypeError, ValueError):
-            break
-        sse = fold_mse * support
-        if not math.isfinite(fold_r2) or not math.isfinite(target_mean) or fold_r2 == 1.0:
-            break
-        r2_parts.append((support, target_mean, sse, sse / (1.0 - fold_r2)))
-    else:
-        global_target_mean = (
-            sum(support * target_mean for support, target_mean, _, _ in r2_parts)
-            / total_support
-        )
-        total_sse = sum(sse for _, _, sse, _ in r2_parts)
-        total_sst = sum(
-            within_sst + support * (target_mean - global_target_mean) ** 2
-            for support, target_mean, _, within_sst in r2_parts
-        )
-        if total_sst > 0:
-            result["R2"] = 1.0 - total_sse / total_sst
-
-    return result
-
-
-def complete_pooled_regression_results(
-    metrics: dict[str, Any], n_bootstrap: int = 1000, random_seed: int = 42
-) -> dict[str, Any]:
-    """Return pooled point estimates and complete-fold bootstrap intervals."""
-    folds = metrics.get("metrics_by_day", [])
-    if not isinstance(folds, list) or not folds:
-        return {}
-
-    point_estimates = pooled_regression_metrics(folds)
-    if not point_estimates:
-        return {}
-
-    rng = np.random.RandomState(random_seed)
-    bootstrap_values = {name: [] for name in point_estimates}
-    for _ in range(n_bootstrap):
-        sampled = [folds[index] for index in rng.choice(len(folds), len(folds), replace=True)]
-        sampled_metrics = pooled_regression_metrics(sampled)
-        for name in bootstrap_values:
-            value = sampled_metrics.get(name)
-            if value is not None and math.isfinite(value):
-                bootstrap_values[name].append(value)
-
-    final_results = {}
-    for name, point_estimate in point_estimates.items():
-        values = bootstrap_values[name]
-        interval = tuple(float(value) for value in np.percentile(values, [2.5, 97.5]))
-        final_results[name] = (point_estimate, interval)
-    return final_results
-
-
 def print_regression(metrics: dict[str, Any], decimals: int) -> None:
-    pooled_results = (
-        metrics.get("pooled_final_results")
-        or complete_pooled_regression_results(metrics)
-    )
+    pooled_results = metrics.get("final_results", {})
     print_final_results(pooled_results, decimals)
     if pooled_results:
         print("Note: Point estimates are calculated from all frames pooled across all folds. "
@@ -862,7 +771,7 @@ def print_regression(metrics: dict[str, Any], decimals: int) -> None:
               "complete folds with replacement, pools the sampled folds, and recalculates "
               "the metric.")
 
-    resampled_results = metrics.get("final_results", {})
+    resampled_results = metrics.get("frame_resampled_results", {})
     print_final_results(
         resampled_results,
         decimals,
@@ -929,7 +838,7 @@ def print_regression(metrics: dict[str, Any], decimals: int) -> None:
             f"Evaluation metrics for true distance <= {format_value(threshold, decimals)}",
             "-",
         )
-        threshold_final = threshold_result.get("final_results", {})
+        threshold_final = threshold_result.get("frame_resampled_results", {})
         print_final_results(
             threshold_final,
             decimals,

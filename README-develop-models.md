@@ -425,15 +425,17 @@ Diagnostic fold fields include one- and two-sided one-sample t tests of absolute
 
 In a date-range run, `average_metrics` is the simple mean of every scalar fold field (apart from `day` and `fold_summary`). `fold_weighted_metrics` weights these values by fold `SUPPORT`; its `SUPPORT` is the sum. Prediction arrays, residual arrays, SHAP dictionaries, and other nonscalars remain only under `metrics_by_day`.
 
-Final MAE, MSE, RMSE, and R2 use a pooled sample-level bootstrap. The runner concatenates all fold predictions, draws 1,000 resamples with replacement using `--random_state`, recomputes the four metrics, and stores the mean bootstrap value plus 2.5/97.5 percentiles. These point values can differ slightly from metrics computed once on the unresampled pooled observations.
+Final MAE, MSE, RMSE, and R2 use exact pooled point estimates with complete-fold bootstrap intervals. The runner pools all original fold statistics for each point estimate, then draws 1,000 sets of complete folds with replacement using `--random_state`, pools each selected set, and recalculates the metric. The 2.5/97.5 percentiles form the interval. These principal values and intervals are stored in `final_results`.
 
-With `--regression_evaluation_threshold T`, the same fold metrics are calculated on `yi <= T`, and a second 1,000-resample pooled bootstrap produces threshold-specific final metrics. A fold with no eligible observations has zero support and NaN scalar metrics. This view never changes fitting or the overall results.
+The alternative `frame_resampled_results` concatenates fold residuals, resamples individual frames 1,000 times, and stores the mean bootstrap value plus 2.5/97.5 percentiles. It is retained as a separately labeled result and is not used as the principal global metric.
+
+With `--regression_evaluation_threshold T`, the same fold metrics are calculated on `yi <= T`, and a second 1,000-resample individual-frame bootstrap produces threshold-specific `frame_resampled_results`. A fold with no eligible observations has zero support and NaN scalar metrics. This view never changes fitting or the overall results.
 
 `--compute_daywise_bootstrap` is passed to the regression evaluator but is not currently used there; regression global bootstrap results are always produced for date-range runs.
 
-### 4.5 The additional `confidence_intervals` field
+### 4.5 Confidence-interval storage
 
-Date-range output also contains `confidence_intervals.accuracy` for classification or `confidence_intervals.MAE` for regression. It applies a normal interval to daily metric values. Its mean is the simple fold mean and its margin is `z(0.975) * fold_standard_deviation / sqrt(len(y_reduced))`. Because the denominator is the total reduced dataset size rather than the number of folds, this field is not the same as the final bootstrap interval. Use `final_results` as the framework's principal global result.
+There is no separate generic confidence-interval dictionary. Each entry in `final_results` stores its canonical point estimate together with the corresponding complete-fold bootstrap interval. Regression entries in `frame_resampled_results` similarly carry their individual-frame bootstrap intervals. This keeps each interval attached to the calculation and sampling unit that produced it.
 
 ### 4.6 Controls that change metric interpretation
 
@@ -474,7 +476,7 @@ The Joblib file contains:
 }
 ```
 
-For date ranges, classification `metrics` contains aggregated and average confusion matrices, average and fold-weighted classification reports, `confidence_intervals`, `metrics_by_day`, and `final_results`. Regression contains `average_metrics`, `fold_weighted_metrics`, `confidence_intervals`, `metrics_by_day`, and `final_results`, plus `regression_threshold_evaluation` when requested.
+For date ranges, classification `metrics` contains aggregated and average confusion matrices, average and fold-weighted classification reports, `metrics_by_day`, and canonical `final_results`. Regression contains `average_metrics`, `fold_weighted_metrics`, `metrics_by_day`, canonical `final_results`, and the alternative `frame_resampled_results`, plus `regression_threshold_evaluation` when requested.
 
 Unless disabled by programmatic configuration, each day also stores `y_true`, `y_pred`, and datetimes. Regression stores residuals. With `--freq_limit_joblib FILE`, each day additionally stores sampled train/test SHAP values, data, base values, and frequency-band feature names. This option enables an interpretation/export path; it does not alter ordinary model fitting or prediction. These arrays can make the Joblib file large.
 
@@ -484,7 +486,7 @@ CSV is written only when `metrics_by_day` exists, which currently means a date-r
 
 Classification CSV columns flatten the average classification-report schema. Rows contain each day, `macro avg` (the simple average of fold reports), `fold-weighted avg`, and `bootstrap final results`. The final row inserts global accuracy, weighted F1, and per-class F1 with their intervals into matching columns. AUC and confusion matrices are not CSV columns.
 
-Regression CSV columns are limited to `MAE`, `SUPPORT`, `RMSE`, `R2`, and `MAE_STD`. Rows contain each day, macro average, fold-weighted average, and bootstrap final results. When evaluation thresholding is enabled, parallel `threshold_...` columns are appended. Although MSE, RMSE_STD, diagnostics, and other metrics remain in Joblib, they are not written to this CSV.
+Regression CSV columns are limited to `MAE`, `SUPPORT`, `RMSE`, `R2`, and `MAE_STD`. Rows contain each day, macro average, fold-weighted average, canonical final results, and frame-resampled results. When evaluation thresholding is enabled, parallel `threshold_...` columns are appended. Although MSE, RMSE_STD, diagnostics, and other metrics remain in Joblib, they are not written to this CSV.
 
 ### 5.4 MLflow parameters, metrics, and artifacts
 
@@ -504,11 +506,11 @@ For a regression date range, scalar MLflow metrics include:
 - all scalar simple averages as `avg_<key>` and support-weighted values as `fold_weighted_<key>` (excluding support);
 - pooled target count, mean, standard deviation, and median;
 - pooled residual mean/std and mean daily skewness/kurtosis;
-- when requested, `threshold_support`, `threshold_MAE`, `threshold_RMSE`, `threshold_MSE`, `threshold_R2`, and available interval bounds.
+- when requested, `threshold_support`; threshold frame-resampled metrics remain in Joblib and the human-readable report rather than being promoted to MLflow globals.
 
 Date-range artifacts include Joblib and CSV beneath the automatic `--results_dir` location (or beside the exact `--joblib_save_file`), the last fold's serialized model under the MLflow `model/` artifact path, classification confusion/per-day plots or regression residual/per-day plots, and the execution log beneath `--log_dir` or at the exact `--log_file` path.
 
-Single-day runs do not log the main classification/regression scalar set or standard result artifacts. A single-day regression run with `--regression_evaluation_threshold` does log threshold scalars and result artifacts. In all cases, the local Joblib and execution log are the reliable records.
+Single-day runs do not log the main classification/regression scalar set or standard result artifacts. A single-day regression run with `--regression_evaluation_threshold` logs its threshold support. In all cases, the local Joblib and execution log are the reliable records.
 
 ## 6. Known implementation issues
 
@@ -524,7 +526,7 @@ The highest-impact restrictions for model authors are:
 | Smoothed AUC | `--instance_window` votes labels but does not aggregate probability scores equivalently. | Do not use smoothed-run AUC as a comparable result. |
 | NN training | Early stopping monitors training loss, `--nn_lr` is inactive, and `drop_last=True` can empty a small fold. | Set learning rate in `load_model` and keep `--nn_batch_size` no larger than the smallest training fold. |
 | Conventional training | Estimators without `eval_set` still lose the 20% validation split. | Report that such models currently fit on 80% of the non-test pool. |
-| Metrics | `RMSE_STD` is the standard deviation of squared errors, and the additional normal `confidence_intervals` field uses an inconsistent denominator. | Do not interpret `RMSE_STD` as RMSE uncertainty; use bootstrap `final_results` for principal intervals. |
+| Metrics | `RMSE_STD` is the standard deviation of squared errors, not uncertainty of RMSE. | Do not interpret `RMSE_STD` as RMSE uncertainty; use `final_results` for principal intervals. |
 | Outputs | Single-day CSV/MLflow output is incomplete, and a date-range run persists only its last-fold model. | Treat single-day Joblib/log files as authoritative and label the saved date-range model as the last-fold model. |
 | Presentation and seeds | MLflow confusion labels may contradict `--invert_threshold_logic`, and classification confusion bootstrap uses fixed seed 42. | Determine class meaning from metadata and record the fixed-seed exception. |
 

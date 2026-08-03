@@ -4,7 +4,6 @@ import numpy as np
 from typing import List, Optional, Union, Literal
 from datetime import datetime, time, timedelta
 from joblib import dump
-from scipy.stats import norm
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, mean_squared_error
@@ -708,68 +707,6 @@ class MetricsAggregator:
         }
 
    
-class ConfidenceIntervalCalculator:
-    """
-    Calculates confidence intervals for metrics assuming a normal distribution.
-    Compatible with global and class-weighted metrics aggregated over k-folds or multiple days.
-    """
-    def __init__(self, confidence_level: float = 0.95):
-        self.confidence_level = confidence_level
-        self.z_value = norm.ppf(1 - (1 - confidence_level) / 2)  # Z-score for the confidence level
-
-    def calculate(self, metric_values: np.ndarray, total_instances: int = None, weights: np.ndarray = None) -> dict:
-        """
-        Calculate the confidence interval for a given set of metric values.
-
-        Args:
-            metric_values (np.ndarray): Array of metric values (e.g., accuracies across k-days).
-            total_instances (int, optional): Total number of instances used for scaling the standard error.
-                                            Defaults to the length of metric_values if not provided.
-            weights (np.ndarray, optional): Array of weights corresponding to metric values for weighted calculations.
-
-        Returns:
-            dict: Dictionary containing the mean, lower bound, upper bound, and margin of error.
-        """
-        if len(metric_values) == 0:
-            raise ValueError("At least one metric value is required.")
-
-        if len(metric_values) == 1:
-            mean_metric = float(metric_values[0])
-            logger.warning(
-                "Only one fold is available; a between-fold confidence interval "
-                "cannot be estimated. Returning the fold value with zero margin."
-            )
-            return {
-                "mean": mean_metric,
-                "lower_bound": mean_metric,
-                "upper_bound": mean_metric,
-                "margin_of_error": 0.0,
-            }
-
-        if weights is not None:
-            if len(metric_values) != len(weights):
-                raise ValueError("metric_values and weights must have the same length.")
-            mean_metric = np.average(metric_values, weights=weights)
-            variance = np.average((metric_values - mean_metric) ** 2, weights=weights)
-            std_metric = np.sqrt(variance)
-        else:
-            mean_metric = np.mean(metric_values)
-            std_metric = np.std(metric_values, ddof=1)
-
-        if total_instances is None:
-            total_instances = len(metric_values)
-
-        margin_of_error = self.z_value * (std_metric / np.sqrt(total_instances))
-        lower_bound = mean_metric - margin_of_error
-        upper_bound = mean_metric + margin_of_error
-
-        return {
-            "mean": mean_metric,
-            "lower_bound": lower_bound,
-            "upper_bound": upper_bound,
-            "margin_of_error": margin_of_error
-        }
-    
 class JoblibSaver:
     """
     Handles saving experiment results and metadata to a joblib file.
@@ -1017,7 +954,7 @@ def aggregate_regression_threshold_metrics(daily_metrics, threshold, random_stat
     result["fold_weighted_metrics"]["SUPPORT"] = support
 
     if not y_true_parts:
-        result["final_results"] = {
+        result["frame_resampled_results"] = {
             key: (np.nan, (np.nan, np.nan))
             for key in ("MAE", "RMSE", "MSE", "R2")
         }
@@ -1041,35 +978,23 @@ def aggregate_regression_threshold_metrics(daily_metrics, threshold, random_stat
             1 - np.sum(residuals ** 2) / denominator if denominator > 0 else np.nan
         )
 
-    result["final_results"] = {}
+    result["frame_resampled_results"] = {}
     for key, values in boot.items():
         values = np.asarray(values, dtype=float)
         finite = values[np.isfinite(values)]
         if len(finite):
-            result["final_results"][key] = (
+            result["frame_resampled_results"][key] = (
                 float(np.mean(finite)),
                 tuple(float(value) for value in np.percentile(finite, [2.5, 97.5])),
             )
         else:
-            result["final_results"][key] = (np.nan, (np.nan, np.nan))
+            result["frame_resampled_results"][key] = (np.nan, (np.nan, np.nan))
     return result
 
 
 def mlflow_threshold_metrics(threshold_result):
-    """Flatten threshold results into MLflow-safe scalar metric names."""
-    values = {"threshold_support": float(threshold_result.get("SUPPORT", 0))}
-    for key, result in threshold_result.get("final_results", {}).items():
-        if not isinstance(result, (tuple, list)) or len(result) != 2:
-            continue
-        point, interval = result
-        if np.isfinite(point):
-            values[f"threshold_{key}"] = float(point)
-        if isinstance(interval, (tuple, list)) and len(interval) == 2:
-            if np.isfinite(interval[0]):
-                values[f"threshold_{key}_low_CI"] = float(interval[0])
-            if np.isfinite(interval[1]):
-                values[f"threshold_{key}_high_CI"] = float(interval[1])
-    return values
+    """Return threshold support without promoting frame-resampled metrics to globals."""
+    return {"threshold_support": float(threshold_result.get("SUPPORT", 0))}
 
 
 def log_performance_results(metrics, is_regression, scope, day=None, fold_label=None):
@@ -1082,10 +1007,7 @@ def log_performance_results(metrics, is_regression, scope, day=None, fold_label=
         context.append(f"test day {day}")
     logger.info("Performance results: %s (%s)", task, ", ".join(context))
 
-    final_results = (
-        metrics.get("pooled_final_results", metrics.get("final_results"))
-        if is_regression else metrics.get("final_results")
-    )
+    final_results = metrics.get("final_results")
     if isinstance(final_results, dict):
         names = ("MAE", "RMSE", "MSE", "R2") if is_regression else (
             "f1", "accuracy", "auc"
@@ -1154,17 +1076,6 @@ def log_performance_results(metrics, is_regression, scope, day=None, fold_label=
             "  Evaluation subset: true target <= %s (support=%d)",
             threshold_result.get("threshold"), int(threshold_result.get("SUPPORT", 0)),
         )
-        threshold_metrics = threshold_result.get("final_results", threshold_result)
-        for name in ("MAE", "RMSE", "MSE", "R2"):
-            result = threshold_metrics.get(name)
-            if isinstance(result, (tuple, list)) and len(result) == 2:
-                value, interval = result
-                logger.info(
-                    "    %s: %.4f (95%% CI: %.4f, %.4f)",
-                    name, value, interval[0], interval[1],
-                )
-            elif result is not None:
-                logger.info("    %s: %.4f", name, result)
 
 
 class CsvSaver:
@@ -1288,7 +1199,7 @@ class CsvSaver:
                 + [threshold_weighted.get(m, '-') for m in metric_names]
             )
 
-            # final_results (bootstrap)
+            # Canonical global results use pooled point estimates and fold bootstrap.
             fin = metrics.get('final_results', {})
             fr = []
             for m in metric_names:
@@ -1297,7 +1208,20 @@ class CsvSaver:
                     fr.append(f"{v:.4f} ({ci[0]:.4f}, {ci[1]:.4f})")
                 else:
                     fr.append('-')
-            threshold_final = (threshold_result or {}).get('final_results', {})
+            rows.append(['final results'] + fr + ['-'] * len(threshold_names))
+
+            # Keep individual-frame bootstrap results explicitly separate.
+            frame_results = metrics.get('frame_resampled_results', {})
+            frame_fr = []
+            for m in metric_names:
+                if m in frame_results:
+                    v, ci = frame_results[m]
+                    frame_fr.append(f"{v:.4f} ({ci[0]:.4f}, {ci[1]:.4f})")
+                else:
+                    frame_fr.append('-')
+            threshold_final = (threshold_result or {}).get(
+                'frame_resampled_results', {}
+            )
             threshold_fr = []
             for m in metric_names:
                 if m in threshold_final:
@@ -1305,7 +1229,7 @@ class CsvSaver:
                     threshold_fr.append(f"{v:.4f} ({ci[0]:.4f}, {ci[1]:.4f})")
                 else:
                     threshold_fr.append('-')
-            rows.append(['bootstrap final results'] + fr + threshold_fr)
+            rows.append(['frame-resampled results'] + frame_fr + threshold_fr)
 
         else:
             return
@@ -1686,7 +1610,6 @@ class PipelineExecutorHDF5:
             if isinstance(test_date_range, list) and len(test_date_range) == 2:
                 start_day, end_day = test_date_range
                 metrics_aggregator = MetricsAggregator(is_regression=self.is_regression)
-                daily_metrics_list = []
 
                 start_date = datetime.strptime(start_day, '%Y-%m-%d').date()
                 end_date = datetime.strptime(end_day, '%Y-%m-%d').date()
@@ -1753,7 +1676,6 @@ class PipelineExecutorHDF5:
                             ),
                         )
                         day_metrics = evaluator.evaluate_on_test_set()
-                        daily_metrics_list.append(day_metrics['MAE'])
                    
                     else: # For classification
                         evaluator = ModelEvaluator(
@@ -1772,7 +1694,6 @@ class PipelineExecutorHDF5:
                             include_predictions=self.config.get('include_predictions', True) # Also good to add for consistency
                         )
                         day_metrics = evaluator.evaluate_on_test_set()
-                        daily_metrics_list.append(day_metrics['accuracy'])
 
                     # tag day for CSV output
                     day_metrics['day'] = single_day_str
@@ -1789,16 +1710,8 @@ class PipelineExecutorHDF5:
                     if torch.cuda.is_available():
                         torch.cuda.empty_cache()
 
-                # AVERAGING + CONFIDENCE INTERVAL
+                # Aggregate fold-level reports and retain every fold's metrics.
                 aggregated_metrics = metrics_aggregator.compute_averages()
-                metric_key = 'MAE' if self.is_regression else 'accuracy'
-                ci_calculator = ConfidenceIntervalCalculator()
-                aggregated_metrics["confidence_intervals"] = {
-                    metric_key: ci_calculator.calculate(
-                        metric_values=np.array(daily_metrics_list),
-                        total_instances=len(y)
-                    )
-                }
                 aggregated_metrics['metrics_by_day'] = metrics_aggregator.metrics
 
                 # --- now compute “final_results” ---
@@ -2045,13 +1958,13 @@ class PipelineExecutorHDF5:
                         all_y_pred = np.concatenate(all_y_pred)
                         all_res = all_y_true - all_y_pred
 
-                    aggregated_metrics['pooled_final_results'] = (
+                    aggregated_metrics['final_results'] = (
                         compute_pooled_regression_final_results(
                             metrics_aggregator.metrics,
                             random_state=self.config.get('random_state', 42),
                         )
                     )
-                    aggregated_metrics['final_results'] = (
+                    aggregated_metrics['frame_resampled_results'] = (
                         compute_frame_resampled_regression_results(
                             metrics_aggregator.metrics,
                             random_state=self.config.get('random_state', 42),
@@ -2079,9 +1992,7 @@ class PipelineExecutorHDF5:
 
                     # Prepare metrics for MLflow
                     regression_metrics_to_log = {}
-                    for metric_name, result in aggregated_metrics[
-                        'pooled_final_results'
-                    ].items():
+                    for metric_name, result in aggregated_metrics['final_results'].items():
                         value, (low_ci, high_ci) = result
                         regression_metrics_to_log[f'global_{metric_name}'] = value
                         regression_metrics_to_log[f'global_{metric_name}_low_CI'] = low_ci
@@ -2145,9 +2056,7 @@ class PipelineExecutorHDF5:
                             r2_global_ci = None
                             mse_global_ci = None
 
-                            plot_final_results = aggregated_metrics.get(
-                                'pooled_final_results', {}
-                            )
+                            plot_final_results = aggregated_metrics.get('final_results', {})
                             if plot_final_results:
                                 if 'MAE' in plot_final_results:
                                     mae_val, (mae_ci_lo, mae_ci_hi) = plot_final_results['MAE']
