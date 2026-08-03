@@ -211,7 +211,7 @@ The three maintained baseline launchers that replicate the best experiments in t
 
 - `scripts/run_xgb_classif_baseline_all_folds-best.sh`: For threshold = 1,000 m, achieves global F1 = 90.11%, class 0 F1 = 84.23%, class 1 F1 = 92.93%, accuracy = 90.24%, and AUC = 94.42%.
 - `scripts/run_xgb_regress_baseline_all_folds-best-1000.sh`: For threshold = 1,000 m, achieves global MAE = 141 m.
-- `scripts/run_xgb_regress_baseline_all_folds-best-5000.sh`: For threshold = 5,000 m, achieves global MAE = 557 m.
+- `scripts/run_xgb_regress_baseline_all_folds-best-5000.sh`: For threshold = 5,000 m, achieves global MAE = 558 m.
 
 They use:
 
