@@ -48,6 +48,44 @@ def _nearest_datetime_index(datetimes, target_dt, tolerance):
     return matched_index
 
 
+def _midpoint_timestamp(start, end):
+    """Return the midpoint between two timestamps, preserving their representation."""
+    if isinstance(start, (str, np.str_)):
+        start_text = str(start)
+        end_text = str(end)
+        uses_z_suffix = start_text.endswith("Z")
+        uses_compact_offset = (
+            len(start_text) >= 5
+            and start_text[-5] in "+-"
+            and start_text[-4:].isdigit()
+        )
+
+        def parse_iso_timestamp(value):
+            if value.endswith("Z"):
+                value = value[:-1] + "+00:00"
+            elif (
+                len(value) >= 5
+                and value[-5] in "+-"
+                and value[-4:].isdigit()
+            ):
+                value = value[:-2] + ":" + value[-2:]
+            return datetime.fromisoformat(value)
+
+        start_dt = parse_iso_timestamp(start_text)
+        end_dt = parse_iso_timestamp(end_text)
+        midpoint = start_dt + (end_dt - start_dt) / 2
+
+        separator = "T" if "T" in start_text else " "
+        midpoint_text = midpoint.isoformat(sep=separator)
+        if uses_z_suffix and midpoint_text.endswith("+00:00"):
+            midpoint_text = midpoint_text[:-6] + "Z"
+        elif uses_compact_offset:
+            midpoint_text = midpoint_text[:-3] + midpoint_text[-2:]
+        return midpoint_text
+
+    return start + (end - start) / 2
+
+
 def compute_shap_values(model, X_train, X_data, feature_names, nsamples_background=100, nsamples_explain=None):
     # Create a background sample from X_train
     background = shap.utils.sample(X_train, nsamples=nsamples_background)
@@ -216,7 +254,7 @@ class TripletReducer:
         if method == "last_t":
             return group_y[-1], group_dt[-1]
 
-        timestamp = group_dt[0] + (group_dt[-1] - group_dt[0]) / 2
+        timestamp = _midpoint_timestamp(group_dt[0], group_dt[-1])
         if method == "majority":
             labels, counts = np.unique(group_y, return_counts=True)
             winners = labels[counts == counts.max()]
@@ -471,9 +509,9 @@ class TripletRegressionReducer:
             if len(group_y) % 2:
                 return group_y[middle], group_dt[middle]
             target = np.mean([group_y[middle - 1], group_y[middle]])
-            timestamp = group_dt[middle - 1] + (
-                group_dt[middle] - group_dt[middle - 1]
-            ) / 2
+            timestamp = _midpoint_timestamp(
+                group_dt[middle - 1], group_dt[middle]
+            )
             return target, timestamp
         if method == "first_t":
             return group_y[0], group_dt[0]
@@ -483,7 +521,7 @@ class TripletRegressionReducer:
             target_index = int(np.argmin(group_y))
             return group_y[target_index], group_dt[target_index]
 
-        timestamp = group_dt[0] + (group_dt[-1] - group_dt[0]) / 2
+        timestamp = _midpoint_timestamp(group_dt[0], group_dt[-1])
         if method == "mean":
             return np.mean(group_y), timestamp
         return np.median(group_y), timestamp
