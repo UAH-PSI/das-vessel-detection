@@ -93,17 +93,20 @@ For the complete and current technical description, refer to the documentation i
 
 The main repository resources include:
 
-| Path                                             | Purpose                                                             |
-|--------------------------------------------------|---------------------------------------------------------------------|
-| `src/`                                           | Dataset loading, partitioning, plotting and reproducibility scripts |
-| `models/`                                        | Public baseline XGBoost classification and regression models        |
-| `scripts/`                                       | Maintained launchers for the best baseline experiment configurations |
-| `data/reduced_dataset_sensor_range_1440_1690.h5` | Ten-minute demonstration extract                                    |
-| `data/fbands.csv`                                | Frequency-band boundaries used for feature extraction               |
-| `data/combined_plot_interval_...0.png`           | Example visualization generated from the demonstration data         |
-| `requirements.txt`                               | Python package requirements                                         |
-| `logos/`                                         | Funding and acknowledgment graphics                                 |
-| `LICENSE`                                        | License applying to the repository software                         |
+| Path                                                                  | Purpose                                                                      |
+|-----------------------------------------------------------------------|------------------------------------------------------------------------------|
+| `src/`                                                                | Dataset loading, partitioning, plotting, and reproducibility scripts         |
+| `models/`                                                             | Public baseline XGBoost classification and regression models                 |
+| `scripts/`                                                            | Maintained launchers for the best baseline experiment configurations         |
+| `docs/`                                                               | Experiment guides, model documentation, tutorial, and README build settings  |
+| `build/`                                                              | Ignored generated documentation, PDFs, and downloaded badge images           |
+| `data/reduced_dataset_sensor_range_1440_1690.h5`                      | Ten-minute demonstration extract                                             |
+| `data/fbands.csv`                                                     | Frequency-band boundaries used for feature extraction                        |
+| `data/combined_plot_interval_20230616T155500_20230616T160500.png`     | Example visualization generated from the demonstration data                  |
+| `requirements.txt`                                                    | Python package requirements                                                  |
+| `Makefile`                                                            | Builds README documentation and generated assets under `build/`              |
+| `logos/`                                                              | Funding and acknowledgment graphics                                          |
+| `LICENSE`                                                             | License applying to the repository software                                  |
 
 This repository is the actively maintained location for software updates and extended reproducibility material. The complete released data remain versioned and preserved in [Zenodo](https://doi.org/10.5281/zenodo.15611778).
 
