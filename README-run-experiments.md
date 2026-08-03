@@ -53,15 +53,15 @@ python src/model_experiment_hdf5.py \
   --reduce_to_size 250 \
   --use_mid_target true \
   --random_state 42 \
-  --run_name xgboost-regression-all-folds-1000-best-avg_chann \
-  --mlflow_experiment_name DAS-XGBoost-regression \
+  --run_name xgboost-regression-all-folds-1000-best \
+  --mlflow_experiment_name DAS-XGBoost-regression-jstars \
   --mlflow_tracking_uri sqlite:///mlflow.db
 ```
 
 The equivalent maintained launcher is:
 
 ```bash
-bash scripts/run_xgb_regress_baseline_all_folds-best-1000-avg_chann.sh
+bash scripts/run_xgb_regress_baseline_all_folds-best-1000.sh
 ```
 
 This experiment removes targets above 1,000 m before training and evaluation. Its error values must therefore be compared only with experiments using the same target population. A lower MAE than a 5,000 m experiment does not, by itself, prove that the model is better.
@@ -89,7 +89,7 @@ python src/model_experiment_hdf5.py \
   --balance_classes unbalanced \
   --random_state 42 \
   --run_name xgboost-classification-all-folds-best \
-  --mlflow_experiment_name DAS-XGBoost-classification \
+  --mlflow_experiment_name DAS-XGBoost-classification-jstars \
   --mlflow_tracking_uri sqlite:///mlflow.db
 ```
 
@@ -167,10 +167,12 @@ The task switch and model-family switch are independent:
 
 `--is_NN false` accepts any compatible model file whose `load_model()` returns an sklearn-style estimator. `--is_NN true` expects a PyTorch loader that returns the model, optimizer, criterion, and optionally a scheduler.
 
+The non-NN path reserves 20% of each fold's available training population for validation. If an estimator does not accept `eval_set`, that reserved portion is currently not used for fitting.
+
 The public repository includes the two best baseline launchers:
 
 ```text
-scripts/run_xgb_regress_baseline_all_folds-best-1000-avg_chann.sh
+scripts/run_xgb_regress_baseline_all_folds-best-1000.sh
 scripts/run_xgb_classif_baseline_all_folds-best.sh
 ```
 
@@ -251,6 +253,8 @@ Regression averages predictions within an instance window. Classification uses m
 
 Classification probabilities are not smoothed in the same way as predicted labels, so interpret AUC from an instance-window run cautiously.
 
+`--random_state` controls most stochastic operations, but the classification confusion-matrix bootstrap currently uses a fixed seed of 42.
+
 ### 4.7 Neural-network controls
 
 | Option            | Meaning                                                  |
@@ -284,7 +288,7 @@ Automatic paths include a UTC timestamp and random execution identifier, so repe
 The launch scripts resolve their own location, change to the repository root, and run the complete command. They are convenient reproducibility records:
 
 ```bash
-bash scripts/run_xgb_regress_baseline_all_folds-best-1000-avg_chann.sh
+bash scripts/run_xgb_regress_baseline_all_folds-best-1000.sh
 bash scripts/run_xgb_classif_baseline_all_folds-best.sh
 ```
 
@@ -372,7 +376,7 @@ Its top-level structure is:
 }
 ```
 
-Metadata records the resolved command configuration without the large `X`, `y`, and datetime arrays. Date-range metrics include `metrics_by_day`, aggregate summaries, confidence intervals, and `final_results`. Prediction and residual arrays are retained where configured, so Joblib may be large.
+Metadata records the resolved command configuration without the large `X`, `y`, and datetime arrays. Date-range metrics include `metrics_by_day`, aggregate summaries, confidence intervals, and `final_results`. New multi-fold regression results also include `pooled_final_results`, which contains the principal pooled metrics and complete-fold bootstrap intervals. Regression `final_results` retains the individual-frame bootstrap results. Prediction and residual arrays are retained where configured, so Joblib may be large.
 
 ### 8.2 CSV is a compact date-range report
 
@@ -401,7 +405,7 @@ python src/print_experiment_results.py \
   --csv classification-report.csv
 ```
 
-The report detects task and scope, prints global results and intervals, configuration, daily folds, classification matrices/reports, or regression summaries. It also writes a flattened comparison CSV.
+The report detects task and scope and also writes a flattened comparison CSV. For classification, it prints pooled global metrics with complete-fold bootstrap intervals, per-class precision/recall/F1, the fold-weighted classification report, the summed confusion matrix, and individual results by day/fold. For regression, it prints pooled global metrics with complete-fold bootstrap intervals, the legacy individual-frame bootstrap results, equal-fold and support-weighted aggregate metrics, individual results by day/fold, and optional threshold-specific results.
 
 ### 9.2 Compare compatible experiments
 
@@ -498,11 +502,13 @@ For the uploaded best XGBoost classification result, the final values were appro
 
 The uploaded 1,000 m, 50-second time-channel result has global MAE about `151.28` m and RMSE about `195.92` m. The channel-averaged command in the quick start is the preferred execution example identified in the subsequent configuration work. Results from the channel run should be read from its own new artifact rather than assigning the time-channel values to it.
 
-### 10.3 Prefer `final_results` for global reporting
+### 10.3 Use the pooled global results for scientific reporting
 
-For date ranges, `final_results` contains the pipeline's principal global metrics and 95% bootstrap intervals. Regression resamples pooled test examples. Classification accuracy and F1 intervals resample whole daily confusion matrices; AUC is a mean of daily AUCs with days resampled for its interval.
+For classification date ranges, `final_results` contains the principal pooled metrics and 95% intervals. Accuracy, precision, recall, F1, and per-class intervals resample complete daily confusion matrices; AUC is the mean daily AUC with complete days resampled for its interval.
 
-The separate `confidence_intervals` field uses a different normal-interval calculation. Do not silently substitute it for `final_results`.
+For regression date ranges, prefer `pooled_final_results`: its point estimates pool all evaluated frames, and its intervals resample complete folds with replacement before recalculating each metric. Regression `final_results` retains the legacy alternative that resamples individual pooled frames; `src/print_experiment_results.py` presents it separately as "Frame-resampled results and 95% confidence intervals."
+
+The separate `confidence_intervals` field uses a different normal-interval calculation. Do not silently substitute it for either task's principal pooled results.
 
 ### 10.4 Always report support and interval
 
@@ -572,7 +578,7 @@ The automatic execution suffix already makes each run unique; the human stem sho
 
 ### 12.3 Treat parsed but inactive options carefully
 
-The active custom-model path does not currently execute `--perform_grid_search` or `--param_grid`. Use explicit commands/generated jobs for sweeps. Likewise, do not use `--nn_lr`, `--balance_test`, `--saturation_threshold`, `--model_output_suffix`, `--vessel_joblib_path`, or `--skip_if_output_exists` as evidence that the corresponding operation occurred. The complete implementation backlog and current workarounds are in [EXPERIMENT-KNOWN-ISSUES.md](EXPERIMENT-KNOWN-ISSUES.md).
+The active custom-model path does not currently execute `--perform_grid_search` or `--param_grid`. Use explicit commands or generated jobs for sweeps. The concise warnings beside `--nn_lr`, `--balance_test`, and `--saturation_threshold` likewise describe their current behavior.
 
 ## 13. Troubleshooting
 
@@ -651,6 +657,14 @@ For regression:
 > XGBoost regression was trained and evaluated within the stated distance range using 50-second features, channel averaging, five-instance mean evaluation, and leave-one-day-out folds from 16–25 June 2023. We report global MAE, RMSE, MSE, R2, residual diagnostics, support, and 95% bootstrap intervals.
 
 Replace these descriptions with the exact metadata from the retained Joblib. This closes the chain from command, through stored configuration and metrics, to a reproducible scientific claim.
+
+## 16. Unused command-line arguments
+
+The active pipeline accepts the following compatibility arguments but does not use them. Supplying them has no effect on execution or persisted artifact naming:
+
+- `--model_output_suffix` does not change the trained-model artifact path; use a unique `--run_name` instead.
+- `--vessel_joblib_path` does not affect targets or model execution.
+- `--skip_if_output_exists` does not check for existing outputs or skip a run; rely on automatically unique paths and do not reuse an explicit `--joblib_save_file`.
 
 <!-- Local Variables: -->
 <!-- mode: markdown -->
