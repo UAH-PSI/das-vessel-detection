@@ -4,15 +4,16 @@
 BASENAME := README
 MD       := $(BASENAME).md
 YAML     := $(BASENAME).yaml
-HTML     := $(BASENAME).html
-TEX      := $(BASENAME).tex
-PDF      := $(BASENAME).pdf
+BUILD_DIR := build
+HTML     := $(BUILD_DIR)/$(BASENAME).html
+TEX      := $(BUILD_DIR)/$(BASENAME).tex
+PDF      := $(BUILD_DIR)/$(BASENAME).pdf
 
 # Compilation-safe public README/PDF. Shields.io serves SVG by default, but
 # PNG assets are used here because they can be embedded directly by XeLaTeX.
 PUBLIC_BASENAME := README-public
-PUBLIC_MD       := $(PUBLIC_BASENAME).md
-PUBLIC_PDF      := $(PUBLIC_BASENAME).pdf
+PUBLIC_MD       := $(BUILD_DIR)/$(PUBLIC_BASENAME).md
+PUBLIC_PDF      := $(BUILD_DIR)/$(PUBLIC_BASENAME).pdf
 PUBLIC_TITLE    := $(shell sed -n '1s/^# //p' $(MD))
 BADGE_DIR       := assets/readme-badges
 JSTARS_BADGE    := $(BADGE_DIR)/jstars.png
@@ -29,7 +30,10 @@ PANDOC := $(shell command -v pandoc 2> /dev/null)
 all: html latex pdf
 
 # HTML conversion
-$(HTML): $(MD) $(YAML)
+$(BUILD_DIR):
+	mkdir -p "$@"
+
+$(HTML): $(MD) $(YAML) | $(BUILD_DIR)
 ifndef PANDOC
 	$(error "pandoc is not available. Please install pandoc first.")
 endif
@@ -42,7 +46,7 @@ endif
 	--toc-depth=4
 
 # LaTeX conversion
-$(TEX): $(MD) $(YAML)
+$(TEX): $(MD) $(YAML) | $(BUILD_DIR)
 ifndef PANDOC
 	$(error "pandoc is not available. Please install pandoc first.")
 endif
@@ -56,7 +60,7 @@ endif
 	--toc-depth=4
 
 # PDF conversion
-$(PDF): $(MD) $(YAML)
+$(PDF): $(MD) $(YAML) | $(BUILD_DIR)
 ifndef PANDOC
 	$(error "pandoc is not available. Please install pandoc first.")
 endif
@@ -100,17 +104,21 @@ $(LICENSE_BADGE): | $(BADGE_DIR)
 # Produce a public Markdown copy with local badges and PDF-friendly headings.
 # The source title becomes PDF metadata, so omit it from the Markdown body;
 # likewise omit the hand-written TOC because Pandoc generates its own.
-$(PUBLIC_MD): $(MD) $(BADGES)
+$(PUBLIC_MD): $(MD) $(BADGES) | $(BUILD_DIR)
 	sed -E \
 	  -e '1d' \
 	  -e '/^## Table of contents$$/,/^## Project summary$$/ { /^## Project summary$$/!d; }' \
 	  -e 's/^#(#+ )/\1/' \
-	  -e 's|https://img.shields.io/badge/IEEE%20JSTARS%20%28accepted%29-10.1109%2FJSTARS.2026.3716768-00629B|$(JSTARS_BADGE)|g' \
-	  -e 's|https://img.shields.io/badge/Zenodo-10.5281%2Fzenodo.15611778-1682D4|$(DATASET_BADGE)|g' \
-	  -e 's|https://img.shields.io/badge/ArXiV%20Preprint-submitted%20to%20Scientific%20Data-orange|$(ARXIV_BADGE)|g' \
-	  -e 's|https://img.shields.io/badge/License-GPLv3-blue.svg|$(LICENSE_BADGE)|g' \
+	  -e 's|https://img.shields.io/badge/IEEE%20JSTARS%20%28accepted%29-10.1109%2FJSTARS.2026.3716768-00629B|../$(JSTARS_BADGE)|g' \
+	  -e 's|https://img.shields.io/badge/Zenodo-10.5281%2Fzenodo.15611778-1682D4|../$(DATASET_BADGE)|g' \
+	  -e 's|https://img.shields.io/badge/ArXiV%20Preprint-submitted%20to%20Scientific%20Data-orange|../$(ARXIV_BADGE)|g' \
+	  -e 's|https://img.shields.io/badge/License-GPLv3-blue.svg|../$(LICENSE_BADGE)|g' \
+	  -e 's|\]\(docs/|](../docs/|g' \
+	  -e 's|\]\(LICENSE\)|](../LICENSE)|g' \
+	  -e 's|\]\(data/|](../data/|g' \
+	  -e 's|\]\(logos/|](../logos/|g' \
 	  -e 's|(!\[[^]]*\]\([^)]*readme-badges/[^)]*\.png\))|\1{height=15px}|g' \
-	  -e '/readme-badges\/license\.png.*\]\(LICENSE\)$$/a\
+	  -e '/readme-badges\/license\.png.*\]\(\.\.\/LICENSE\)$$/a\
 ```{=latex}\n\\newpage\n```' \
 	  "$<" > "$@.tmp"
 	mv "$@.tmp" "$@"
@@ -122,6 +130,7 @@ endif
 	pandoc "$<" \
 	-t pdf -o "$@.tmp" \
 	--pdf-engine=xelatex \
+	--resource-path="$(BUILD_DIR)" \
 	--metadata-file "$(YAML)" \
 	--variable urlcolor=blue \
 	--metadata title="$(PUBLIC_TITLE)" \
@@ -140,8 +149,8 @@ html: $(HTML)
 latex: $(TEX)
 pdf: $(PDF)
 
-# Build through README-public.md, then publish the result under the canonical
-# README.pdf name. mv ensures a failed compilation leaves README.pdf intact.
+# Build through build/README-public.md, then publish the result under the
+# canonical build/README.pdf name. mv ensures a failed compilation leaves it intact.
 public-pdf: $(PUBLIC_PDF)
 	mv "$(PUBLIC_PDF)" "$(PDF)"
 
@@ -150,10 +159,10 @@ clean:
 
 help:
 	@echo "Available targets:"
-	@echo "  all    - Build all formats (HTML, LaTeX, PDF)"
-	@echo "  html   - Build HTML version"
-	@echo "  latex  - Build LaTeX version"
-	@echo "  pdf    - Build PDF version"
-	@echo "  public-pdf - Download badges, build README-public.md, and publish README.pdf"
+	@echo "  all    - Build all formats under build/"
+	@echo "  html   - Build build/README.html"
+	@echo "  latex  - Build build/README.tex"
+	@echo "  pdf    - Build build/README.pdf"
+	@echo "  public-pdf - Build build/README-public.md and publish build/README.pdf"
 	@echo "  clean  - Remove generated files"
 	@echo "  help   - Show this help"

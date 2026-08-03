@@ -192,3 +192,11 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# Generated and temporary README files from current and older workflows
+/README.html
+/README.tex
+/README.pdf
+/README-public.md
+/README-public.pdf
+/README.md.alt

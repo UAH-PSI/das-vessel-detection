@@ -9,7 +9,7 @@ The primary examples use the best baseline XGBoost configurations identified in 
 
 These are examples of the execution workflow, not universal guarantees that the same configuration is optimal for another dataset, target definition, or date range.
 
-For model implementation details, see `README-develop-models.md`. For a guided model-development exercise, see `README-tutorial-develop-models.md`.
+For model implementation details, see the [model reference](model-reference.md). For a guided model-development exercise, see the [model tutorial](model-tutorial.md).
 
 > **Contributions and bug reports are welcome.** This research software is under active development. If you find a bug, an incorrect calculation, misleading documentation, or a reproducibility problem, please report it through the repository [issue tracker](https://github.com/UAH-PSI/das-vessel-detection/issues). Source-code contributions, tests, documentation corrections, and independently reproduced results are especially welcome. Before contributing substantial code changes, please describe them in an issue so their scope and compatibility with the experimental methodology can be discussed.
 
@@ -164,8 +164,8 @@ The task switch and model-family switch are independent:
 |-------------------------------|------------------:|----------:|----------------------------------------------------------|
 | XGBoost regression            |            `true` |   `false` | `models/baseline_xgb_regression_model.py`                |
 | XGBoost classification        |           `false` |   `false` | `models/baseline_xgb_classification_model.py`            |
-| Neural-network regression     |            `true` |    `true` | Create a model using `README-tutorial-develop-models.md` |
-| Neural-network classification |           `false` |    `true` | Create a model using `README-tutorial-develop-models.md` |
+| Neural-network regression     |            `true` |    `true` | Create a model using the [model tutorial](model-tutorial.md) |
+| Neural-network classification |           `false` |    `true` | Create a model using the [model tutorial](model-tutorial.md) |
 
 `--is_NN false` accepts any compatible model file whose `load_model()` returns an sklearn-style estimator. `--is_NN true` expects a PyTorch loader that returns the model, optimizer, criterion, and optionally a scheduler.
 

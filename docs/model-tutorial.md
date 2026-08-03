@@ -8,7 +8,7 @@ This tutorial walks through adding a model to the DAS vessel experiment framewor
 The NN paths create new model files from the code contracts shown in Sections
 6 and 7; prebuilt NN model files are intentionally not distributed.
 
-The goal is to teach the development workflow. For an exhaustive description of every metric, output field, and current limitation, see `README-develop-models.md`.
+The goal is to teach the development workflow. For an exhaustive description of every metric, output field, and current limitation, see the [model reference](model-reference.md).
 
 All commands in this tutorial are run from the repository root.
 
@@ -211,7 +211,7 @@ The evaluator uses probability column 1 for ROC AUC. The current experiment aggr
 
 For the complete list of inactive controls and unresolved evaluation,
 training, metric, and persistence defects, see
-[EXPERIMENT-KNOWN-ISSUES.md](EXPERIMENT-KNOWN-ISSUES.md).
+[known-issues document](known-issues.md).
 
 ### 5.2 Define what class 1 means
 
@@ -235,7 +235,7 @@ Binary evaluation treats class 1 as the conventional positive class. Confusion
 matrices use actual classes as rows and predicted classes as columns, producing
 `[[TN, FP], [FN, TP]]`. The semantic meaning of those entries depends on
 `invert_threshold_logic`; see the complete convention in the
-[experiment guide](README-run-experiments.md#class-polarity-and-confusion-matrix-convention).
+[experiment guide](run-experiments.md#class-polarity-and-confusion-matrix-convention).
 
 ### 5.3 Create and test your classifier
 

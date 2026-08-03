@@ -84,7 +84,7 @@ The dataset supports two principal tasks:
 2. **Vessel-to-cable distance estimation:** regression using the continuous closest-vessel distance.
 
 The numeric meanings of classes 0 and 1 depend on the configured threshold
-polarity; see the [experiment guide](README-run-experiments.md#class-polarity-and-confusion-matrix-convention)
+polarity; see the [experiment guide](docs/run-experiments.md#class-polarity-and-confusion-matrix-convention)
 for the class and confusion-matrix convention.
 
 For the complete and current technical description, refer to the documentation in the [Zenodo record](https://doi.org/10.5281/zenodo.15611778).
@@ -206,9 +206,9 @@ Start with these documents:
 
 | Guide                                                                  | Purpose                                                                    |
 |------------------------------------------------------------------------|----------------------------------------------------------------------------|
-| [README-run-experiments.md](README-run-experiments.md)                 | Installation, baseline commands, result files, MLflow, and result analysis |
-| [README-develop-models.md](README-develop-models.md)                   | Reference documentation for adding classification or regression models     |
-| [README-tutorial-develop-models.md](README-tutorial-develop-models.md) | Step-by-step model-development tutorial                                    |
+| [Run experiments](docs/run-experiments.md) | Installation, baseline commands, result files, MLflow, and result analysis |
+| [Model reference](docs/model-reference.md) | Reference documentation for adding classification or regression models |
+| [Model tutorial](docs/model-tutorial.md) | Step-by-step model-development tutorial |
 
 The three maintained baseline launchers that replicate the best experiments in the [JSTARS journal](#2.-ieee-jstars-accepted-article) are:
 
