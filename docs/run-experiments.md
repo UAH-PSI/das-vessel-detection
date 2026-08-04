@@ -2,10 +2,12 @@
 
 This guide explains how to launch, monitor, inspect, compare, and preserve experiments produced by `src/model_experiment_hdf5.py`. It is organized as an operational reference with a short first-run walkthrough.
 
-The primary examples use the best baseline XGBoost configurations identified in the available experiment work:
+The primary examples use the canonical central XGBoost baseline:
 
-- regression: 1,000 m target range, 50-second feature windows, five-instance evaluation windows, and channel averaging;
-- classification: 1,000 m class threshold, 50-second feature windows, five-instance evaluation windows, and channel averaging.
+- central reduction target and reduction timestamp;
+- central evaluation values and evaluation timestamp;
+- 50-second feature windows, five-instance evaluation windows, and channel averaging;
+- a 1,000 m regression range or classification threshold.
 
 These are examples of the execution workflow, not universal guarantees that the same configuration is optimal for another dataset, target definition, or date range.
 
@@ -34,7 +36,7 @@ data/dataset_sensor_range_1440_1690_0.h5
 
 If your dataset is elsewhere, either change `--h5_path` in the command or make a copy of the relevant launch script and edit that copy.
 
-### 1.2 Run the best regression example
+### 1.2 Run the canonical regression baseline
 
 The direct command is:
 
@@ -45,6 +47,10 @@ python src/model_experiment_hdf5.py \
   --is_NN false \
   --is_regression true \
   --regression_threshold 1000 \
+  --regression_target_method central_t \
+  --reduction_timestamp_method central_t \
+  --regression_evaluation_method central_i \
+  --evaluation_timestamp_method central_i \
   --test_date_start 2023-06-16 \
   --test_date_end 2023-06-25 \
   --n_seconds 50 \
@@ -53,22 +59,21 @@ python src/model_experiment_hdf5.py \
   --average_signals channel \
   --apply_log true \
   --reduce_to_size 250 \
-  --use_mid_target true \
   --random_state 42 \
-  --run_name xgboost-regression-all-folds-1000-best \
-  --mlflow_experiment_name DAS-XGBoost-regression-jstars \
+  --run_name xgb-regression-central-1000m-iw5 \
+  --mlflow_experiment_name DAS-XGBoost-regression-central-baseline \
   --mlflow_tracking_uri sqlite:///mlflow.db
 ```
 
 The equivalent maintained launcher is:
 
 ```bash
-bash scripts/run_xgb_regress_baseline_all_folds-best-1000.sh
+bash scripts/run_xgb_regression_central_1000m_iw5.sh
 ```
 
 This experiment removes targets above 1,000 m before training and evaluation. Its error values must therefore be compared only with experiments using the same target population. A lower MAE than a 5,000 m experiment does not, by itself, prove that the model is better.
 
-### 1.3 Run the best classification example
+### 1.3 Run the canonical classification baseline
 
 ```bash
 python src/model_experiment_hdf5.py \
@@ -77,6 +82,10 @@ python src/model_experiment_hdf5.py \
   --is_NN false \
   --is_regression false \
   --classification_thresholds 1000 \
+  --classification_target_method central_t \
+  --reduction_timestamp_method central_t \
+  --classification_evaluation_method central_i \
+  --evaluation_timestamp_method central_i \
   --invert_threshold_logic false \
   --test_date_start 2023-06-16 \
   --test_date_end 2023-06-25 \
@@ -86,24 +95,51 @@ python src/model_experiment_hdf5.py \
   --apply_log true \
   --reduce_to_size 250 \
   --instance_window 5 \
-  --use_mid_target true \
   --join_higher_classes true \
   --balance_classes unbalanced \
   --random_state 42 \
-  --run_name xgboost-classification-all-folds-best \
-  --mlflow_experiment_name DAS-XGBoost-classification-jstars \
+  --run_name xgb-classification-central-1000m-iw5 \
+  --mlflow_experiment_name DAS-XGBoost-classification-central-baseline \
   --mlflow_tracking_uri sqlite:///mlflow.db
 ```
 
 Or use:
 
 ```bash
-bash scripts/run_xgb_classif_baseline_all_folds-best.sh
+bash scripts/run_xgb_classification_central_1000m_iw5.sh
 ```
 
 With `--invert_threshold_logic false`, class 1 means distance greater than 1,000 m and class 0 means distance at most 1,000 m. Preserve this interpretation when reading class-specific precision, recall, and F1.
 
-### 1.4 Confirm completion
+### 1.4 Reproduce the supported legacy J-STARS configurations
+
+The framework has changed substantially since the IEEE JSTARS experiments.
+The new target, evaluation, and timestamp controls make temporal behavior
+explicit and support configurations that were not available in the paper
+code. Independent `legacy` values preserve the conventions used by the
+maintained best-paper configurations; they do not form a universally validated
+compatibility mode for arbitrary option combinations.
+
+Use the five-instance legacy launchers for the maintained best J-STARS
+configurations:
+
+```bash
+bash scripts/run_xgb_classification_legacy_1000m_iw5.sh
+bash scripts/run_xgb_regression_legacy_1000m_iw5.sh
+bash scripts/run_xgb_regression_legacy_5000m_iw5.sh
+```
+
+The corresponding `iw1` scripts retain the same reduction and timestamp
+conventions but disable multi-instance evaluation aggregation. They are useful
+controlled variants, not additional best-paper configurations.
+
+Each legacy option is independent. For classification, legacy reduction and
+evaluation use majority behavior; regression uses a central reduction target
+and mean evaluation; both tasks use the first timestamp at reduction and
+evaluation. Use the maintained scripts when claiming J-STARS compatibility
+instead of constructing an untested mixture of legacy and new methods.
+
+### 1.5 Confirm completion
 
 A successful run prints and logs:
 
@@ -136,6 +172,10 @@ python src/model_experiment_hdf5.py \
   --is_regression false \
   --is_NN false \
   --classification_thresholds 1000 \
+  --classification_target_method central_t \
+  --reduction_timestamp_method central_t \
+  --classification_evaluation_method central_i \
+  --evaluation_timestamp_method central_i \
   --average_signals channel \
   --n_seconds 50 \
   --n_overlapping_seconds -10 \
@@ -171,14 +211,18 @@ The task switch and model-family switch are independent:
 
 The non-NN path reserves 20% of each fold's available training population for validation. If an estimator does not accept `eval_set`, that reserved portion is currently not used for fitting.
 
-The public repository includes the two best baseline launchers:
+The public repository includes paired canonical and legacy launchers. File
+names encode task, distance, and evaluation window: `iw1` means
+`instance_window=1`, and `iw5` means `instance_window=5`.
 
 ```text
-scripts/run_xgb_regress_baseline_all_folds-best-1000.sh
-scripts/run_xgb_classif_baseline_all_folds-best.sh
+scripts/run_xgb_classification_{central,legacy}_1000m_iw{1,5}.sh
+scripts/run_xgb_regression_{central,legacy}_{1000,5000}m_iw{1,5}.sh
 ```
 
-They reproduce the quick-start commands with the best XGBoost settings identified in the experiment sequence.
+The braces summarize the naming matrix and are not literal filenames. The
+legacy `iw5` scripts are the maintained best-paper configurations. The
+central scripts are the canonical baseline for the improved interface.
 
 ## 4. Command-line controls by purpose
 
@@ -202,23 +246,28 @@ Use `python src/model_experiment_hdf5.py --help` for the authoritative defaults 
 
 Every selected day must be represented in the dataset. Classification folds must have both true classes for ROC AUC to be defined.
 
-### 4.3 Feature construction
+### 4.3 Feature construction and reduction
 
-| Option                    | Meaning                                                               |
-|---------------------------|-----------------------------------------------------------------------|
-| `--n_seconds`             | Duration of one feature-aggregation group; use a multiple of 10       |
-| `--n_overlapping_seconds` | Positive literal overlap, or negative overlap relative to `n_seconds` |
-| `--average_signals`       | `none`, `time`, `channel`, or `time_channel`                          |
-| `--apply_log`             | Apply `log(max(x, 1e-23))` before aggregation                         |
-| `--reduce_to_size`        | Retain this many central sensor channels before aggregation           |
-| `--time_offset_seconds`   | Pair features at time `t` with targets near `t + offset`              |
-| `--use_mid_target`        | Choose central/modal rather than minimum target during reduction      |
+| Option                                    | Meaning                                                               |
+|-------------------------------------------|-----------------------------------------------------------------------|
+| `--n_seconds`                             | Duration of one feature-aggregation group; use a multiple of 10       |
+| `--n_overlapping_seconds`                 | Positive literal overlap, or negative overlap relative to `n_seconds` |
+| `--average_signals`                       | `none`, `time`, `channel`, or `time_channel`                          |
+| `--apply_log`                             | Apply `log(max(x, 1e-23))` before aggregation                         |
+| `--reduce_to_size`                        | Retain this many central sensor channels before aggregation           |
+| `--time_offset_seconds`                   | Pair features at time `t` with targets near `t + offset`              |
+| `--classification_target_method METHOD` | Select the reduced classification label                               |
+| `--regression_target_method METHOD`     | Select the reduced regression value                                  |
+| `--reduction_timestamp_method METHOD`   | Independently select a source-frame timestamp                         |
 
 > **Warning:** Use `--time_offset_seconds` only for datasets known to contain a feature/target timestamp offset. Current HDF5 releases are already synchronized and require no offset.
 
-XGBoost and the simple fully connected NNs should normally use `channel` or `time_channel`, which produce a two-dimensional batch. The best examples use `channel`.
+XGBoost and the simple fully connected NNs should normally use `channel` or `time_channel`, which produce a two-dimensional batch. The baseline examples use `channel`.
 
-For `n_seconds=50` and `n_overlapping_seconds=-10`, the effective overlap is 40 seconds and the stride is 10 seconds.
+For `n_seconds=50` and `n_overlapping_seconds=-10`, the effective overlap is
+40 seconds and the stride is 10 seconds. Target methods act on the five source
+frames in each group. The reduction timestamp is selected independently. The
+suffix `_t` refers to a position among these source frames.
 
 ### 4.4 Classification controls
 
@@ -228,6 +277,7 @@ For `n_seconds=50` and `n_overlapping_seconds=-10`, the effective overlap is 40 
 | `--invert_threshold_logic`      | Make class 1 mean `y <= T` rather than `y > T`                                |
 | `--join_higher_classes`         | Collapse labels above zero into binary class 1                                |
 | `--balance_classes`             | `unbalanced`, `smote`, `adasyn`, `naive`, or `undersample` for training folds |
+| `--classification_target_method` | Select `central_t`, `first_t`, `last_t`, `min`, majority, a binary class-presence rule, or `legacy` |
 
 The current evaluator and global aggregation are binary. Keep `--join_higher_classes true` for supported comparisons.
 
@@ -240,22 +290,39 @@ The current evaluator and global aggregation are binary. Keep `--join_higher_cla
 | `--regression_threshold T`            | Remove targets above `T` before grouping, training, and testing                  |
 | `--regression_evaluation_threshold T` | Add metrics for test targets `<= T` without changing training or overall metrics |
 | `--y_min`, `--y_max`                  | Filter using the original HDF5 `y` before target construction                    |
+| `--regression_target_method`            | Select a positional, minimum, mean, median, or `legacy` reduced target           |
 
 Use `--regression_evaluation_threshold 1000` when the scientific question is “how does a model trained on the full range perform within 1,000 m?” Use `--regression_threshold 1000` when the intended model itself is trained and evaluated only within 1,000 m.
 
 The accepted `--saturation_threshold` is not connected to the active reducer and does not currently clip targets.
 
+The complete method lists, tie behavior, positional semantics, and legacy
+resolution are defined in the [model reference](model-reference.md#14-target-selection-and-temporal-controls).
+
 ### 4.6 Evaluation smoothing and uncertainty
 
-| Option                        | Meaning                                                     |
-|-------------------------------|-------------------------------------------------------------|
-| `--instance_window W`         | Aggregate stride-one windows of `W` consecutive predictions |
-| `--center_truth`              | Use the central true value instead of mean/majority truth   |
-| `--compute_daywise_bootstrap` | Add sample-level daily classification uncertainty           |
+| Option                                      | Meaning                                                               |
+|---------------------------------------------|-----------------------------------------------------------------------|
+| `--instance_window W`                       | Aggregate stride-one windows of `W` consecutive reduced instances     |
+| `--classification_evaluation_method METHOD` | Apply one classification method to predictions and true labels        |
+| `--regression_evaluation_method METHOD`     | Apply one regression method to predictions and true values            |
+| `--evaluation_timestamp_method METHOD`     | Independently select a reduced-instance timestamp                     |
+| `--compute_daywise_bootstrap`               | Add sample-level daily classification uncertainty                     |
 
-Regression averages predictions within an instance window. Classification uses majority vote. This changes the evaluated unit and support; do not compare smoothed and unsmoothed metrics as if they represented the same observations.
+Classification supports first, central, last, majority, and binary
+class-presence methods. Regression supports first, central, last, minimum,
+maximum, mean, and median. The selected method is applied symmetrically to
+predictions and true values. `legacy` resolves to classification majority or
+regression mean. The suffix `_i` refers to a position among reduced instances.
 
-Classification probabilities are not smoothed in the same way as predicted labels, so interpret AUC from an instance-window run cautiously.
+With no `--instance_window`, or with `instance_window=1`, evaluation value
+and timestamp methods have no effect. With `W > 1`, aggregation changes the
+evaluated unit and support; adjacent stride-one outputs overlap and are
+correlated. Central evaluation values or timestamps require an odd `W`.
+
+Classification probabilities are not aggregated consistently with the selected
+label method, so do not use AUC from an `instance_window > 1` run as a
+comparable smoothed metric.
 
 `--random_state` controls most stochastic operations, but the classification confusion-matrix bootstrap currently uses a fixed seed of 42.
 
@@ -292,11 +359,15 @@ Automatic paths include a UTC timestamp and random execution identifier, so repe
 The launch scripts resolve their own location, change to the repository root, and run the complete command. They are convenient reproducibility records:
 
 ```bash
-bash scripts/run_xgb_regress_baseline_all_folds-best-1000.sh
-bash scripts/run_xgb_classif_baseline_all_folds-best.sh
+bash scripts/run_xgb_regression_central_1000m_iw5.sh
+bash scripts/run_xgb_classification_central_1000m_iw5.sh
 ```
 
 Inspect a script before running it on another machine, particularly its dataset path, date range, virtual-environment assumptions, and MLflow URI.
+
+Use the `*_legacy_*_iw5.sh` launchers only when reproducing the maintained
+best J-STARS configurations. Use the `*_central_*` launchers as the starting
+point for new experiments.
 
 ### 5.2 Run in a terminal multiplexer on remote machines
 
@@ -380,7 +451,18 @@ Its top-level structure is:
 }
 ```
 
-Metadata records the resolved command configuration without the large `X`, `y`, and datetime arrays. Date-range metrics include `metrics_by_day`, aggregate summaries, and `final_results`. For both tasks, `final_results` contains the principal pooled metrics and complete-fold bootstrap intervals. Regression additionally stores its individual-frame bootstrap alternative in `frame_resampled_results`. Prediction and residual arrays are retained where configured, so Joblib may be large.
+Metadata records the resolved command configuration without the large `X`,
+`y`, and datetime arrays. Date-range metrics include `metrics_by_day`,
+aggregate summaries, and `final_results`. For both tasks, `final_results`
+contains the principal pooled metrics and complete-fold bootstrap intervals.
+Regression additionally stores its individual-frame bootstrap alternative in
+`frame_resampled_results`.
+
+Where predictions are included, each fold stores synchronized `datetimes`,
+`y_pred`, and `y_true` arrays plus `prediction_triplets` of the form
+`(timestamp, prediction, true_value)`. These are the values after the selected
+evaluation aggregation and timestamp assignment. Train-set triplets are not
+currently generated. Prediction and residual arrays can make Joblib large.
 
 ### 8.2 CSV is a compact date-range report
 
@@ -535,8 +617,8 @@ Keep fixed unless deliberately studied:
 - classification threshold and inversion logic;
 - held-out dates;
 - feature duration, overlap, averaging, log transform, and sensor count;
-- target grouping and time offset;
-- evaluation instance window and center-truth choice;
+- reduction target method, reduction timestamp method, and time offset;
+- evaluation instance window, task-specific evaluation method, and evaluation timestamp method;
 - training balancing;
 - random state;
 - code and dependency revision.
@@ -654,11 +736,11 @@ Store that information beside the experiment manifest or execution log. The auto
 
 For classification, report a statement such as:
 
-> Binary XGBoost classification used a 1,000 m threshold, 50-second features, channel averaging, five-instance majority-vote evaluation, and leave-one-day-out folds from 16–25 June 2023. We report pooled global weighted F1, weighted precision, weighted recall, accuracy, AUC, per-class precision/recall/F1, the summed confusion matrix, support, and 95% complete-fold bootstrap intervals.
+> Binary XGBoost classification used a 1,000 m threshold, 50-second features, channel averaging, central reduction target/timestamp selection, five-instance central evaluation value/timestamp selection, and leave-one-day-out folds from 16–25 June 2023. We report pooled global weighted F1, weighted precision, weighted recall, accuracy, per-class precision/recall/F1, the summed confusion matrix, support, and 95% complete-fold bootstrap intervals.
 
 For regression:
 
-> XGBoost regression was trained and evaluated within the stated distance range using 50-second features, channel averaging, five-instance mean evaluation, and leave-one-day-out folds from 16–25 June 2023. We report pooled-frame MAE, RMSE, MSE, and R2 point estimates with 95% complete-fold bootstrap intervals, together with residual diagnostics and support.
+> XGBoost regression was trained and evaluated within the stated distance range using 50-second features, channel averaging, central reduction target/timestamp selection, five-instance central evaluation value/timestamp selection, and leave-one-day-out folds from 16–25 June 2023. We report pooled-frame MAE, RMSE, MSE, and R2 point estimates with 95% complete-fold bootstrap intervals, together with residual diagnostics and support.
 
 Replace these descriptions with the exact metadata from the retained Joblib. This closes the chain from command, through stored configuration and metrics, to a reproducible scientific claim.
 
