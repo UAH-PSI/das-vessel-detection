@@ -200,7 +200,7 @@ def parse_args():
     parser.add_argument(
         '--classification_evaluation_method',
         choices=[
-            'legacy', 'central_t', 'first_t', 'last_t', 'majority',
+            'legacy', 'central_i', 'first_i', 'last_i', 'majority',
             'any_class_0', 'all_class_0', 'any_class_1', 'all_class_1',
         ],
         default='legacy',
@@ -213,7 +213,7 @@ def parse_args():
     parser.add_argument(
         '--regression_evaluation_method',
         choices=[
-            'legacy', 'central_t', 'first_t', 'last_t',
+            'legacy', 'central_i', 'first_i', 'last_i',
             'min', 'max', 'mean', 'median',
         ],
         default='legacy',
@@ -221,6 +221,17 @@ def parse_args():
             "How to aggregate predicted and true regression values for each "
             "multi-frame evaluation window. Legacy resolves to mean. This option has no "
             "effect when instance_window is omitted or 1."
+        ),
+    )
+    parser.add_argument(
+        '--evaluation_timestamp_method',
+        choices=['legacy', 'first_i', 'central_i', 'last_i'],
+        default='legacy',
+        help=(
+            "Representative reduced-instance timestamp assigned to each evaluation "
+            "window. Legacy reproduces the J-STARS/current convention and selects "
+            "the first instance. This option has no effect when instance_window is "
+            "omitted or 1."
         ),
     )
     parser.add_argument(

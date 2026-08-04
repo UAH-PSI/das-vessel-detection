@@ -1568,6 +1568,9 @@ class PipelineExecutorHDF5:
         )
         if regression_evaluation_method == 'legacy':
             regression_evaluation_method = 'mean'
+        evaluation_timestamp_method = self.config.get(
+            'evaluation_timestamp_method', 'legacy'
+        )
         
 
         run_name = self.config.get('mlflow_run_name')
@@ -1683,6 +1686,7 @@ class PipelineExecutorHDF5:
                             regression_evaluation_method=(
                                 regression_evaluation_method
                             ),
+                            evaluation_timestamp_method=evaluation_timestamp_method,
                             include_predictions=self.config.get('include_predictions', True),
                             regression_evaluation_threshold=self.config.get(
                                 'regression_evaluation_threshold'
@@ -1706,6 +1710,7 @@ class PipelineExecutorHDF5:
                             classification_evaluation_method=(
                                 classification_evaluation_method
                             ),
+                            evaluation_timestamp_method=evaluation_timestamp_method,
                             include_predictions=self.config.get('include_predictions', True) # Also good to add for consistency
                         )
                         day_metrics = evaluator.evaluate_on_test_set()
@@ -2214,6 +2219,7 @@ class PipelineExecutorHDF5:
                         regression_evaluation_method=(
                             regression_evaluation_method
                         ),
+                        evaluation_timestamp_method=evaluation_timestamp_method,
                         include_predictions=self.config.get('include_predictions', True),
                         regression_evaluation_threshold=self.config.get(
                             'regression_evaluation_threshold'
@@ -2227,12 +2233,15 @@ class PipelineExecutorHDF5:
                         y_train,
                         y_test,
                         None,
+                        dt_train=dt_train,
+                        dt_test=dt_test,
                         instance_window=instance_window,
                         freq_limit_joblib=freq_limit_joblib,
                         compute_daywise_bootstrap=self.config.get('compute_daywise_bootstrap', False),
                         classification_evaluation_method=(
                             classification_evaluation_method
-                        )
+                        ),
+                        evaluation_timestamp_method=evaluation_timestamp_method,
                     )
                 aggregated_metrics = evaluator.evaluate_on_test_set()
                 if (

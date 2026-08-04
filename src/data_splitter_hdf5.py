@@ -48,6 +48,26 @@ def _nearest_datetime_index(datetimes, target_dt, tolerance):
     return matched_index
 
 
+def _select_evaluation_timestamps(
+    datetimes, instance_window, method, output_length
+):
+    """Select one reduced-instance timestamp for each evaluation result."""
+    datetimes = np.asarray(datetimes)
+    if not instance_window or instance_window <= 1 or output_length == len(datetimes):
+        return datetimes[:output_length]
+
+    offsets = {
+        "legacy": 0,
+        "first_i": 0,
+        "central_i": instance_window // 2,
+        "last_i": instance_window - 1,
+    }
+    offset = offsets[method]
+    return np.asarray(
+        [datetimes[start + offset] for start in range(output_length)]
+    )
+
+
 def compute_shap_values(model, X_train, X_data, feature_names, nsamples_background=100, nsamples_explain=None):
     # Create a background sample from X_train
     background = shap.utils.sample(X_train, nsamples=nsamples_background)
@@ -1064,6 +1084,7 @@ class ModelEvaluator:
         compute_daywise_bootstrap: bool = False, n_bootstrap: int = 1000,
         freq_limit_joblib=None,
         classification_evaluation_method: str = "legacy",
+        evaluation_timestamp_method: str = "legacy",
         include_predictions: bool = True
     ):
         self.model = model
@@ -1079,7 +1100,7 @@ class ModelEvaluator:
         self.n_bootstrap = n_bootstrap
         self.freq_limit_joblib = freq_limit_joblib
         valid_evaluation_methods = {
-            "legacy", "central_t", "first_t", "last_t", "majority",
+            "legacy", "central_i", "first_i", "last_i", "majority",
             "any_class_0", "all_class_0", "any_class_1", "all_class_1",
         }
         if classification_evaluation_method not in valid_evaluation_methods:
@@ -1092,6 +1113,33 @@ class ModelEvaluator:
             if classification_evaluation_method == "legacy"
             else classification_evaluation_method
         )
+        valid_timestamp_methods = {"legacy", "first_i", "central_i", "last_i"}
+        if evaluation_timestamp_method not in valid_timestamp_methods:
+            raise ValueError(
+                "Invalid evaluation_timestamp_method. Expected one of: "
+                + ", ".join(sorted(valid_timestamp_methods))
+            )
+        if (
+            evaluation_timestamp_method == "central_i"
+            and self.instance_window
+            and self.instance_window > 1
+            and self.instance_window % 2 == 0
+        ):
+            raise ValueError(
+                "evaluation_timestamp_method='central_i' requires an odd "
+                "instance_window"
+            )
+        if (
+            self.classification_evaluation_method == "central_i"
+            and self.instance_window
+            and self.instance_window > 1
+            and self.instance_window % 2 == 0
+        ):
+            raise ValueError(
+                "classification_evaluation_method='central_i' requires an odd "
+                "instance_window"
+            )
+        self.evaluation_timestamp_method = evaluation_timestamp_method
         self.include_predictions = include_predictions
 
         if self.instance_window and self.instance_window > 1:
@@ -1109,6 +1157,7 @@ class ModelEvaluator:
             sorted_indices_test = np.argsort(self.dt_test)
             self.X_test = self.X_test[sorted_indices_test]
             self.y_test = self.y_test[sorted_indices_test]
+            self.dt_test = self.dt_test[sorted_indices_test]
 
     def evaluate_on_test_set(self):
         """
@@ -1218,12 +1267,22 @@ class ModelEvaluator:
             results["y_true"] = y_test_windowed
             results["y_pred"] = y_pred_windowed
             if self.dt_test is not None:
-                # Adjust dt_test length to match y_test_windowed
-                if self.instance_window and self.instance_window > 1:
-                    num_windows = len(self.y_test) - self.instance_window + 1
-                    results["datetimes"] = self.dt_test[:num_windows]
-                else:
-                    results["datetimes"] = self.dt_test[:len(y_test_windowed)]
+                timestamps = _select_evaluation_timestamps(
+                    self.dt_test,
+                    self.instance_window,
+                    self.evaluation_timestamp_method,
+                    len(y_test_windowed),
+                )
+                if not (
+                    len(timestamps) == len(y_pred_windowed) == len(y_test_windowed)
+                ):
+                    raise RuntimeError(
+                        "Evaluation timestamps, predictions, and true values are not aligned"
+                    )
+                results["datetimes"] = timestamps
+                results["prediction_triplets"] = list(
+                    zip(timestamps, y_pred_windowed, y_test_windowed)
+                )
 
 
 
@@ -1300,11 +1359,11 @@ class ModelEvaluator:
         method = self.classification_evaluation_method
         if method == "majority":
             return self._get_majority_vote(values)
-        if method == "central_t":
+        if method == "central_i":
             return values[len(values) // 2]
-        if method == "first_t":
+        if method == "first_i":
             return values[0]
-        if method == "last_t":
+        if method == "last_i":
             return values[-1]
 
         labels = set(np.unique(values).tolist())
@@ -1363,6 +1422,7 @@ class ModelRegressionEvaluator:
                  y_threshold=None, instance_window=None, dt_train=None, dt_test=None,
                  print_results=False, compute_daywise_bootstrap: bool = False, freq_limit_joblib=None,
                  regression_evaluation_method: str = "legacy",
+                 evaluation_timestamp_method: str = "legacy",
                  include_predictions: bool = True,
                  regression_evaluation_threshold=None):
         """
@@ -1392,7 +1452,7 @@ class ModelRegressionEvaluator:
         self.compute_daywise_bootstrap = compute_daywise_bootstrap
         self.freq_limit_joblib = freq_limit_joblib
         valid_evaluation_methods = {
-            "legacy", "central_t", "first_t", "last_t",
+            "legacy", "central_i", "first_i", "last_i",
             "min", "max", "mean", "median",
         }
         if regression_evaluation_method not in valid_evaluation_methods:
@@ -1405,6 +1465,33 @@ class ModelRegressionEvaluator:
             if regression_evaluation_method == "legacy"
             else regression_evaluation_method
         )
+        valid_timestamp_methods = {"legacy", "first_i", "central_i", "last_i"}
+        if evaluation_timestamp_method not in valid_timestamp_methods:
+            raise ValueError(
+                "Invalid evaluation_timestamp_method. Expected one of: "
+                + ", ".join(sorted(valid_timestamp_methods))
+            )
+        if (
+            evaluation_timestamp_method == "central_i"
+            and self.instance_window
+            and self.instance_window > 1
+            and self.instance_window % 2 == 0
+        ):
+            raise ValueError(
+                "evaluation_timestamp_method='central_i' requires an odd "
+                "instance_window"
+            )
+        if (
+            self.regression_evaluation_method == "central_i"
+            and self.instance_window
+            and self.instance_window > 1
+            and self.instance_window % 2 == 0
+        ):
+            raise ValueError(
+                "regression_evaluation_method='central_i' requires an odd "
+                "instance_window"
+            )
+        self.evaluation_timestamp_method = evaluation_timestamp_method
         self.include_predictions = include_predictions
         self.regression_evaluation_threshold = regression_evaluation_threshold
 
@@ -1639,12 +1726,22 @@ class ModelRegressionEvaluator:
             metrics["y_true"] = y_test_windowed
             metrics["y_pred"] = y_pred_windowed
             if self.dt_test is not None:
-                # Adjust dt_test length to match y_test_windowed
-                if self.instance_window and self.instance_window > 1:
-                    num_windows = len(self.y_test) - self.instance_window + 1
-                    metrics["datetimes"] = self.dt_test[:num_windows]
-                else:
-                    metrics["datetimes"] = self.dt_test[:len(y_test_windowed)]
+                timestamps = _select_evaluation_timestamps(
+                    self.dt_test,
+                    self.instance_window,
+                    self.evaluation_timestamp_method,
+                    len(y_test_windowed),
+                )
+                if not (
+                    len(timestamps) == len(y_pred_windowed) == len(y_test_windowed)
+                ):
+                    raise RuntimeError(
+                        "Evaluation timestamps, predictions, and true values are not aligned"
+                    )
+                metrics["datetimes"] = timestamps
+                metrics["prediction_triplets"] = list(
+                    zip(timestamps, y_pred_windowed, y_test_windowed)
+                )
 
 
         return metrics
@@ -1654,6 +1751,13 @@ class ModelRegressionEvaluator:
         """Apply the configured regression method to both sides of each window."""
         y_true_windowed, y_pred_windowed = [], []
         num_windows = len(y_true) - self.instance_window + 1  # Overlapping sliding windows
+
+        if num_windows <= 0:
+            logger.warning(
+                "Not enough data for full instance_window=%d; skipping window aggregation",
+                self.instance_window,
+            )
+            return np.asarray(y_pred), np.asarray(y_true)
 
         # for i in range(num_windows):
         #     y_true_window = y_true[i:i + self.instance_window]
@@ -1676,11 +1780,11 @@ class ModelRegressionEvaluator:
         """Apply the configured regression evaluation method to one window."""
         values = np.asarray(values)
         method = self.regression_evaluation_method
-        if method == "central_t":
+        if method == "central_i":
             return values[len(values) // 2]
-        if method == "first_t":
+        if method == "first_i":
             return values[0]
-        if method == "last_t":
+        if method == "last_i":
             return values[-1]
         if method == "min":
             return np.min(values)

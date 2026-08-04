@@ -16,6 +16,7 @@ python src/model_experiment_hdf5.py \
   --regression_threshold 1000 \
   --regression_target_method legacy \
   --reduction_timestamp_method legacy \
+  --evaluation_timestamp_method legacy \
   --test_date_start 2023-06-16 \
   --test_date_end 2023-06-25 \
   --n_seconds 50 \

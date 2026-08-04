@@ -6,6 +6,7 @@
     --classification_thresholds 1000 \
     --classification_target_method majority \
     --reduction_timestamp_method central_t \
+    --evaluation_timestamp_method central_i \
     --invert_threshold_logic false \
     --test_date_start 2023-06-16 \
     --test_date_end 2023-06-25 \
