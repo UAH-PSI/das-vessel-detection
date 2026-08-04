@@ -4,11 +4,12 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+PYTHON_BIN="${PYTHON_BIN:-python}"
 
 cd "${REPO_ROOT}"
 mkdir -p results
 
-python src/model_experiment_hdf5.py \
+"${PYTHON_BIN}" src/model_experiment_hdf5.py \
   --h5_path data/dataset_sensor_range_1440_1690_0.h5 \
   --model_file models/baseline_xgb_classification_model.py \
   --is_NN false \
@@ -30,6 +31,6 @@ python src/model_experiment_hdf5.py \
   --join_higher_classes true \
   --balance_classes unbalanced \
   --random_state 42 \
-  --run_name xgboost-classification-all-folds-best-legacy \
+  --run_name xgb-classification-legacy-1000m-iw5 \
   --mlflow_experiment_name DAS-XGBoost-classification-jstars-legacy \
   --mlflow_tracking_uri sqlite:///mlflow.db

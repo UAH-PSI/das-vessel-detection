@@ -4,19 +4,21 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+PYTHON_BIN="${PYTHON_BIN:-python}"
 
 cd "${REPO_ROOT}"
 mkdir -p results
 
-python src/model_experiment_hdf5.py \
+"${PYTHON_BIN}" src/model_experiment_hdf5.py \
   --h5_path data/dataset_sensor_range_1440_1690_0.h5 \
   --model_file models/baseline_xgb_classification_model.py \
   --is_NN false \
   --is_regression false \
   --classification_thresholds 1000 \
-  --classification_target_method majority \
-  --reduction_timestamp_method central_t \
-  --evaluation_timestamp_method central_i \
+  --classification_target_method legacy \
+  --reduction_timestamp_method legacy \
+  --classification_evaluation_method legacy \
+  --evaluation_timestamp_method legacy \
   --invert_threshold_logic false \
   --test_date_start 2023-06-16 \
   --test_date_end 2023-06-25 \
@@ -25,10 +27,10 @@ python src/model_experiment_hdf5.py \
   --average_signals channel \
   --apply_log true \
   --reduce_to_size 250 \
-  --instance_window 5 \
+  --instance_window 1 \
   --join_higher_classes true \
   --balance_classes unbalanced \
   --random_state 42 \
-  --run_name xgboost-classification-all-folds-best-majority \
-  --mlflow_experiment_name DAS-XGBoost-classification-jstars-majority \
+  --run_name xgb-classification-legacy-1000m-iw1 \
+  --mlflow_experiment_name DAS-XGBoost-classification-jstars-legacy \
   --mlflow_tracking_uri sqlite:///mlflow.db
