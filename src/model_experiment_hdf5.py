@@ -274,26 +274,25 @@ def parse_args():
     parser.add_argument('--time_offset_seconds', type=int, default=None, help="Shift labels by this many seconds")
     parser.add_argument('--balance_test', type=str, default="false", choices=["true", "false"], help="[INACTIVE] Accepted for compatibility but the active pipeline does not balance the test set")
     parser.add_argument('--balance_classes', type=str, default='unbalanced', choices=['unbalanced', 'smote', 'adasyn', 'naive', 'undersample'], help="Class balancing method")
-    parser.add_argument('--use_mid_target', type=str, default="true", choices=["true", "false"], help="Use midpoint as target in reduction?")
     parser.add_argument(
         '--regression_target_method',
         choices=['legacy', 'central_t', 'first_t', 'last_t', 'min', 'mean', 'median'],
-        default=None,
+        default='legacy',
         help=(
             "Regression target and representative timestamp calculation. "
-            "When omitted, --use_mid_target true selects legacy and false selects min."
+            "Legacy reproduces the J-STARS central-target calculation."
         ),
     )
     parser.add_argument(
         '--classification_target_method',
         choices=[
-            'legacy', 'central_t', 'first_t', 'last_t', 'majority',
+            'legacy', 'central_t', 'first_t', 'last_t', 'min', 'majority',
             'any_class_0', 'all_class_0', 'any_class_1', 'all_class_1',
         ],
-        default=None,
+        default='legacy',
         help=(
             "Classification target and representative timestamp calculation. "
-            "When omitted, existing --use_mid_target behavior is preserved."
+            "Legacy reproduces the J-STARS majority-label calculation."
         ),
     )
     parser.add_argument(
@@ -503,13 +502,6 @@ def main():
     config['apply_log'] = str2bool(config['apply_log'])
     config['join_higher_classes'] = str2bool(config['join_higher_classes'])
     config['balance_test'] = str2bool(config['balance_test'])
-    config['use_mid_target'] = str2bool(config['use_mid_target'])
-    if config['is_regression'] and config['regression_target_method'] is None:
-        config['regression_target_method'] = (
-            'legacy' if config['use_mid_target'] else 'min'
-        )
-    if not config['is_regression'] and config['classification_target_method'] is None:
-        config['classification_target_method'] = 'legacy'
     config['perform_grid_search'] = str2bool(config['perform_grid_search'])
     config['compute_daywise_bootstrap'] = str2bool(config['compute_daywise_bootstrap'])
     config['skip_if_output_exists'] = str2bool(config['skip_if_output_exists'])
@@ -655,7 +647,6 @@ def main():
     time_offset_seconds_val = config['time_offset_seconds']
     join_higher_classes_val = config['join_higher_classes']
     is_regression_val = config['is_regression']
-    use_mid_target_val = config.get('use_mid_target', True)
 
     logger.info("Instantiating Reducer...")
 
@@ -670,7 +661,6 @@ def main():
             epsilon=1e-23,
             time_offset_seconds=time_offset_seconds_val,
             threshold=config.get('regression_threshold', None),
-            use_mid_target=use_mid_target_val,
             regression_target_method=config.get('regression_target_method'),
             reduction_timestamp_method=config['reduction_timestamp_method'],
         )
@@ -685,7 +675,6 @@ def main():
             epsilon=1e-23,
             time_offset_seconds=time_offset_seconds_val,
             join_higher_classes=join_higher_classes_val,
-            use_mid_target=use_mid_target_val,
             classification_target_method=config.get('classification_target_method'),
             reduction_timestamp_method=config['reduction_timestamp_method'],
         )

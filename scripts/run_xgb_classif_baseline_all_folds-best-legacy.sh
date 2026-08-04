@@ -27,7 +27,6 @@ python src/model_experiment_hdf5.py \
   --apply_log true \
   --reduce_to_size 250 \
   --instance_window 5 \
-  --use_mid_target true \
   --join_higher_classes true \
   --balance_classes unbalanced \
   --random_state 42 \

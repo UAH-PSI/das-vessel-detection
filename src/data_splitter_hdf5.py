@@ -93,7 +93,7 @@ def compute_shap_values(model, X_train, X_data, feature_names, nsamples_backgrou
 class TripletReducer:
     def __init__(self, X, y, dt, ships=None, n_seconds=10, n_overlapping_seconds=None,
                  join_higher_classes=True, average_signals=False, apply_log=True,
-                 epsilon=1e-23, time_offset_seconds=None, use_mid_target=False,
+                 epsilon=1e-23, time_offset_seconds=None,
                  sample_seconds=10,
                  classification_target_method=None,
                  reduction_timestamp_method="legacy"):
@@ -116,7 +116,6 @@ class TripletReducer:
         - apply_log: If True, apply np.log to the reduced X while avoiding NaNs.
         - epsilon: Small value added to X before applying log to avoid NaNs.
         - time_offset_seconds: If provided, shift the labels (y) by this time offset in seconds.
-        - use_mid_target: If True, calculate the mean of target values in the group.
         """
         self.X = X
         self.y = y
@@ -129,7 +128,6 @@ class TripletReducer:
         self.apply_log = apply_log
         self.epsilon = epsilon
         self.time_offset_seconds = time_offset_seconds
-        self.use_mid_target = use_mid_target
         self.sample_seconds = sample_seconds
         if self.n_seconds < self.sample_seconds or self.n_seconds % self.sample_seconds:
             raise ValueError(
@@ -153,7 +151,7 @@ class TripletReducer:
         if classification_target_method is None:
             classification_target_method = "legacy"
         valid_target_methods = {
-            "legacy", "central_t", "first_t", "last_t", "majority",
+            "legacy", "central_t", "first_t", "last_t", "min", "majority",
             "any_class_0", "all_class_0", "any_class_1", "all_class_1",
         }
         if classification_target_method not in valid_target_methods:
@@ -240,17 +238,15 @@ class TripletReducer:
         middle = len(group_y) // 2
 
         if method == "legacy":
-            if self.use_mid_target:
-                target = np.bincount(group_y).argmax()
-            else:
-                target = min(group_y)
-            return target
+            return np.bincount(group_y).argmax()
         if method == "central_t":
             return group_y[middle]
         if method == "first_t":
             return group_y[0]
         if method == "last_t":
             return group_y[-1]
+        if method == "min":
+            return min(group_y)
 
         if method == "majority":
             labels, counts = np.unique(group_y, return_counts=True)
@@ -349,7 +345,6 @@ class TripletRegressionReducer:
                  average_signals="none", apply_log=True, epsilon=1e-23,
                  time_offset_seconds=7200,
                  threshold=None, eliminate_within_range=None,
-                 use_mid_target=False,
                  regression_target_method=None,
                  sample_seconds=10,
                  reduction_timestamp_method="legacy"):
@@ -367,7 +362,6 @@ class TripletRegressionReducer:
         - time_offset_seconds: If provided, shift the labels (y) by this time offset in seconds.
         - threshold: If provided, any y value greater than this threshold will be filtered out along with its corresponding X and dt.
         - eliminate_within_range: If provided, a tuple (low, high) to eliminate y values within that range.
-        - use_mid_target: If True, selects the most central value as the target.
         """
         self.X = X
         self.y = y
@@ -381,9 +375,8 @@ class TripletRegressionReducer:
         self.time_offset_seconds = time_offset_seconds
         self.threshold = threshold
         self.eliminate_within_range = eliminate_within_range
-        self.use_mid_target = use_mid_target
         if regression_target_method is None:
-            regression_target_method = "legacy" if use_mid_target else "min"
+            regression_target_method = "legacy"
         valid_target_methods = {
             "legacy", "central_t", "first_t", "last_t", "min", "mean", "median"
         }

@@ -22,7 +22,7 @@ python src/model_experiment_hdf5.py \
   --average_signals channel \
   --apply_log true \
   --reduce_to_size 250 \
-  --use_mid_target true \
+  --regression_target_method legacy \
   --random_state 42 \
   --run_name xgboost-regression-all-folds-1000-best \
   --mlflow_experiment_name DAS-XGBoost-regression-jstars \
