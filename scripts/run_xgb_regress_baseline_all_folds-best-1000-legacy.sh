@@ -16,6 +16,7 @@ python src/model_experiment_hdf5.py \
   --regression_threshold 1000 \
   --regression_target_method legacy \
   --reduction_timestamp_method legacy \
+  --regression_evaluation_method legacy \
   --evaluation_timestamp_method legacy \
   --test_date_start 2023-06-16 \
   --test_date_end 2023-06-25 \
@@ -25,7 +26,6 @@ python src/model_experiment_hdf5.py \
   --average_signals channel \
   --apply_log true \
   --reduce_to_size 250 \
-  --use_mid_target true \
   --random_state 42 \
   --run_name xgboost-regression-all-folds-1000-best-legacy \
   --mlflow_experiment_name DAS-XGBoost-regression-jstars-legacy \
