@@ -112,7 +112,7 @@ class TripletReducer:
     def __init__(self, X, y, dt, ships=None, n_seconds=10, n_overlapping_seconds=None,
                  join_higher_classes=True, average_signals=False, apply_log=True,
                  epsilon=1e-23, time_offset_seconds=None, use_mid_target=False,
-                 sample_seconds=10, center_truth=False,
+                 sample_seconds=10,
                  classification_target_method=None):
         """
         Initialize with the data to be reduced and the parameters.
@@ -148,7 +148,6 @@ class TripletReducer:
         self.time_offset_seconds = time_offset_seconds
         self.use_mid_target = use_mid_target
         self.sample_seconds = sample_seconds
-        self.center_truth = center_truth
         if classification_target_method is None:
             classification_target_method = "legacy"
         valid_target_methods = {
@@ -240,10 +239,7 @@ class TripletReducer:
 
         if method == "legacy":
             if self.use_mid_target:
-                if self.center_truth:
-                    target = group_y[middle]
-                else:
-                    target = np.bincount(group_y).argmax()
+                target = np.bincount(group_y).argmax()
             else:
                 target = min(group_y)
             return target, min(group_dt)
@@ -1043,7 +1039,9 @@ class ModelEvaluator:
         self, model, X_train, X_test, y_train, y_test, cv,
         instance_window: Optional[int] = None, dt_train=None, dt_test=None,
         compute_daywise_bootstrap: bool = False, n_bootstrap: int = 1000,
-        freq_limit_joblib=None, center_ground_truth: bool = False, include_predictions: bool = True
+        freq_limit_joblib=None,
+        classification_evaluation_method: str = "legacy",
+        include_predictions: bool = True
     ):
         self.model = model
         self.X_train = X_train
@@ -1057,7 +1055,20 @@ class ModelEvaluator:
         self.compute_daywise_bootstrap = compute_daywise_bootstrap
         self.n_bootstrap = n_bootstrap
         self.freq_limit_joblib = freq_limit_joblib
-        self.center_ground_truth = center_ground_truth
+        valid_evaluation_methods = {
+            "legacy", "central_t", "first_t", "last_t", "majority",
+            "any_class_0", "all_class_0", "any_class_1", "all_class_1",
+        }
+        if classification_evaluation_method not in valid_evaluation_methods:
+            raise ValueError(
+                "Invalid classification_evaluation_method. Expected one of: "
+                + ", ".join(sorted(valid_evaluation_methods))
+            )
+        self.classification_evaluation_method = (
+            "majority"
+            if classification_evaluation_method == "legacy"
+            else classification_evaluation_method
+        )
         self.include_predictions = include_predictions
 
         if self.instance_window and self.instance_window > 1:
@@ -1089,8 +1100,9 @@ class ModelEvaluator:
 
 
         if self.instance_window and self.instance_window > 1:
-            # Apply majority voting over instance_window-sized overlapping groups
-            y_pred_windowed, y_test_windowed = self._apply_majority_voting(self.y_test, y_pred)
+            y_pred_windowed, y_test_windowed = self._apply_window_evaluation(
+                self.y_test, y_pred
+            )
         else:
             y_pred_windowed, y_test_windowed = y_pred, self.y_test
 
@@ -1123,12 +1135,12 @@ class ModelEvaluator:
         if self.compute_daywise_bootstrap:
             logger.info("Computing per-day bootstrap uncertainty...")
             results["uncertainty"] = {
-                "accuracy": self._compute_bootstrap_uncertainty(y_test_windowed, y_pred, accuracy_score),
+                "accuracy": self._compute_bootstrap_uncertainty(y_test_windowed, y_pred_windowed, accuracy_score),
                 "f1_macro": self._compute_bootstrap_uncertainty(
-                    y_test_windowed, y_pred, lambda y_true, y_pred: f1_score(y_true, y_pred, average='macro')
+                    y_test_windowed, y_pred_windowed, lambda y_true, y_pred: f1_score(y_true, y_pred, average='macro')
                 ),
                 "f1_weighted": self._compute_bootstrap_uncertainty(
-                    y_test_windowed, y_pred, lambda y_true, y_pred: f1_score(y_true, y_pred, average='weighted')
+                    y_test_windowed, y_pred_windowed, lambda y_true, y_pred: f1_score(y_true, y_pred, average='weighted')
                 )
             }
 
@@ -1234,16 +1246,8 @@ class ModelEvaluator:
     #     min_len = min(len(y_true_windowed), len(y_pred_windowed))
     #     return y_pred_windowed[:min_len], y_true_windowed[:min_len]
 
-    def _apply_majority_voting(self, y_true, y_pred):
-        """
-        Applies majority voting across overlapping windows in the test set.
-        - Each window contains `instance_window` overlapping elements.
-        - Majority class from y_true forms the ground truth.
-        - Majority class from y_pred forms the model prediction.
-
-        Returns:
-            y_pred_windowed, y_true_windowed (both with the same length)
-        """
+    def _apply_window_evaluation(self, y_true, y_pred):
+        """Apply the configured classification method to both sides of each window."""
         y_true_windowed, y_pred_windowed = [], []
 
         # Ensure we have enough data points to form at least one full window
@@ -1253,32 +1257,11 @@ class ModelEvaluator:
 
         num_windows = len(y_true) - self.instance_window + 1  # Overlapping sliding windows
 
-        differences_count = 0
-        total_windows = 0
-
         for i in range(num_windows):
             y_true_window = y_true[i:i + self.instance_window]
             y_pred_window = y_pred[i:i + self.instance_window]
-
-            center_index = self.instance_window // 2
-            center_value = y_true_window[center_index]
-            majority_value = self._get_majority_vote(y_true_window)
-
-            if center_value != majority_value:
-                differences_count += 1
-
-            total_windows += 1
-
-            # Compute majority vote for each window
-            if self.center_ground_truth:
-                y_true_windowed.append(center_value)
-            else:
-                y_true_windowed.append(majority_value)
-            y_pred_windowed.append(self._get_majority_vote(y_pred_window))
-
-        if self.center_ground_truth:
-            print(f"DEBUG: Total windows processed: {total_windows}")
-            print(f"DEBUG: Number of windows where center value != majority vote: {differences_count}")
+            y_true_windowed.append(self._aggregate_classification_window(y_true_window))
+            y_pred_windowed.append(self._aggregate_classification_window(y_pred_window))
 
         # Convert to numpy arrays and ensure they have the same length
         y_true_windowed = np.array(y_true_windowed)
@@ -1287,6 +1270,31 @@ class ModelEvaluator:
         # Ensure equal lengths (in case of any unexpected misalignment)
         min_len = min(len(y_true_windowed), len(y_pred_windowed))
         return y_pred_windowed[:min_len], y_true_windowed[:min_len]
+
+    def _aggregate_classification_window(self, values):
+        """Apply the configured classification evaluation method to one window."""
+        values = np.asarray(values)
+        method = self.classification_evaluation_method
+        if method == "majority":
+            return self._get_majority_vote(values)
+        if method == "central_t":
+            return values[len(values) // 2]
+        if method == "first_t":
+            return values[0]
+        if method == "last_t":
+            return values[-1]
+
+        labels = set(np.unique(values).tolist())
+        if not labels.issubset({0, 1}):
+            raise ValueError(
+                f"{method} requires binary classification labels, got {sorted(labels)}"
+            )
+        selected_class = int(method[-1])
+        if method.startswith("any_"):
+            condition_met = np.any(values == selected_class)
+        else:
+            condition_met = np.all(values == selected_class)
+        return selected_class if condition_met else 1 - selected_class
 
     # @time_it
     def _get_majority_vote(self, values):
@@ -1331,7 +1339,8 @@ class ModelRegressionEvaluator:
     def __init__(self, model, X_train, X_test, y_train, y_test, cv,
                  y_threshold=None, instance_window=None, dt_train=None, dt_test=None,
                  print_results=False, compute_daywise_bootstrap: bool = False, freq_limit_joblib=None,
-                 center_ground_truth: bool = False, include_predictions: bool = True,
+                 regression_evaluation_method: str = "legacy",
+                 include_predictions: bool = True,
                  regression_evaluation_threshold=None):
         """
         Initialize the evaluator with the model and data.
@@ -1359,7 +1368,20 @@ class ModelRegressionEvaluator:
         self.print_results = print_results
         self.compute_daywise_bootstrap = compute_daywise_bootstrap
         self.freq_limit_joblib = freq_limit_joblib
-        self.center_ground_truth = center_ground_truth
+        valid_evaluation_methods = {
+            "legacy", "central_t", "first_t", "last_t",
+            "min", "max", "mean", "median",
+        }
+        if regression_evaluation_method not in valid_evaluation_methods:
+            raise ValueError(
+                "Invalid regression_evaluation_method. Expected one of: "
+                + ", ".join(sorted(valid_evaluation_methods))
+            )
+        self.regression_evaluation_method = (
+            "mean"
+            if regression_evaluation_method == "legacy"
+            else regression_evaluation_method
+        )
         self.include_predictions = include_predictions
         self.regression_evaluation_threshold = regression_evaluation_threshold
 
@@ -1415,8 +1437,9 @@ class ModelRegressionEvaluator:
         y_pred = self.model.predict(self.X_test)
 
         if self.instance_window and self.instance_window > 1:
-            # Apply mean aggregation across instance_window-sized overlapping groups
-            y_pred_windowed, y_test_windowed = self._apply_mean_grouping(self.y_test, y_pred)
+            y_pred_windowed, y_test_windowed = self._apply_window_evaluation(
+                self.y_test, y_pred
+            )
         else:
             y_pred_windowed, y_test_windowed = y_pred, self.y_test
 
@@ -1604,10 +1627,8 @@ class ModelRegressionEvaluator:
         return metrics
 
 
-    def _apply_mean_grouping(self, y_true, y_pred):
-        """
-        Applies mean value aggregation across overlapping instance_window-sized groups in the test set.
-        """
+    def _apply_window_evaluation(self, y_true, y_pred):
+        """Apply the configured regression method to both sides of each window."""
         y_true_windowed, y_pred_windowed = [], []
         num_windows = len(y_true) - self.instance_window + 1  # Overlapping sliding windows
 
@@ -1623,15 +1644,28 @@ class ModelRegressionEvaluator:
             y_true_window = y_true[i:i + self.instance_window]
             y_pred_window = y_pred[i:i + self.instance_window]
 
-            # Compute mean value for each window
-            if self.center_ground_truth:
-                center_index = self.instance_window // 2
-                y_true_windowed.append(y_true_window[center_index])
-            else:
-                y_true_windowed.append(np.mean(y_true_window))
-            y_pred_windowed.append(np.mean(y_pred_window))
+            y_true_windowed.append(self._aggregate_regression_window(y_true_window))
+            y_pred_windowed.append(self._aggregate_regression_window(y_pred_window))
 
         return np.array(y_pred_windowed), np.array(y_true_windowed)
+
+    def _aggregate_regression_window(self, values):
+        """Apply the configured regression evaluation method to one window."""
+        values = np.asarray(values)
+        method = self.regression_evaluation_method
+        if method == "central_t":
+            return values[len(values) // 2]
+        if method == "first_t":
+            return values[0]
+        if method == "last_t":
+            return values[-1]
+        if method == "min":
+            return np.min(values)
+        if method == "max":
+            return np.max(values)
+        if method == "median":
+            return np.median(values)
+        return np.mean(values)
 
 
     def evaluate_with_cross_validation(self):

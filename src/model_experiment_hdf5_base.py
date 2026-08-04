@@ -1556,7 +1556,18 @@ class PipelineExecutorHDF5:
         instance_window = self.config.get('instance_window', None)
         n_seconds = self.config.get('n_seconds', None)
         freq_limit_joblib = self.config.get('freq_limit_joblib', None)
-        center_ground_truth = self.config.get('center_truth', False)
+        classification_evaluation_method = self.config.get(
+            'resolved_classification_evaluation_method',
+            self.config.get('classification_evaluation_method', 'legacy'),
+        )
+        if classification_evaluation_method == 'legacy':
+            classification_evaluation_method = 'majority'
+        regression_evaluation_method = self.config.get(
+            'resolved_regression_evaluation_method',
+            self.config.get('regression_evaluation_method', 'legacy'),
+        )
+        if regression_evaluation_method == 'legacy':
+            regression_evaluation_method = 'mean'
         
 
         run_name = self.config.get('mlflow_run_name')
@@ -1669,7 +1680,9 @@ class PipelineExecutorHDF5:
                             instance_window=instance_window,
                             freq_limit_joblib=freq_limit_joblib,
                             compute_daywise_bootstrap=self.config.get('compute_daywise_bootstrap', False),
-                            center_ground_truth=center_ground_truth,
+                            regression_evaluation_method=(
+                                regression_evaluation_method
+                            ),
                             include_predictions=self.config.get('include_predictions', True),
                             regression_evaluation_threshold=self.config.get(
                                 'regression_evaluation_threshold'
@@ -1690,7 +1703,9 @@ class PipelineExecutorHDF5:
                             instance_window=instance_window,
                             freq_limit_joblib=freq_limit_joblib,
                             compute_daywise_bootstrap=self.config.get('compute_daywise_bootstrap', False),
-                            center_ground_truth=center_ground_truth,
+                            classification_evaluation_method=(
+                                classification_evaluation_method
+                            ),
                             include_predictions=self.config.get('include_predictions', True) # Also good to add for consistency
                         )
                         day_metrics = evaluator.evaluate_on_test_set()
@@ -2196,7 +2211,9 @@ class PipelineExecutorHDF5:
                         instance_window=instance_window,
                         freq_limit_joblib=freq_limit_joblib,
                         compute_daywise_bootstrap=self.config.get('compute_daywise_bootstrap', False),
-                        center_ground_truth=center_ground_truth,
+                        regression_evaluation_method=(
+                            regression_evaluation_method
+                        ),
                         include_predictions=self.config.get('include_predictions', True),
                         regression_evaluation_threshold=self.config.get(
                             'regression_evaluation_threshold'
@@ -2213,7 +2230,9 @@ class PipelineExecutorHDF5:
                         instance_window=instance_window,
                         freq_limit_joblib=freq_limit_joblib,
                         compute_daywise_bootstrap=self.config.get('compute_daywise_bootstrap', False),
-                        center_ground_truth=center_ground_truth
+                        classification_evaluation_method=(
+                            classification_evaluation_method
+                        )
                     )
                 aggregated_metrics = evaluator.evaluate_on_test_set()
                 if (

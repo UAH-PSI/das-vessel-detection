@@ -198,6 +198,32 @@ def parse_args():
         help="Number of consecutive windows to group at evaluation for temporal smoothing. Classification labels are voted, but probability scores are not equivalently aggregated, so smoothed AUC is not reliable."
     )
     parser.add_argument(
+        '--classification_evaluation_method',
+        choices=[
+            'legacy', 'central_t', 'first_t', 'last_t', 'majority',
+            'any_class_0', 'all_class_0', 'any_class_1', 'all_class_1',
+        ],
+        default='legacy',
+        help=(
+            "How to aggregate predicted and true classification labels for each "
+            "multi-frame evaluation window. Legacy resolves to majority. This option has no "
+            "effect when instance_window is omitted or 1."
+        ),
+    )
+    parser.add_argument(
+        '--regression_evaluation_method',
+        choices=[
+            'legacy', 'central_t', 'first_t', 'last_t',
+            'min', 'max', 'mean', 'median',
+        ],
+        default='legacy',
+        help=(
+            "How to aggregate predicted and true regression values for each "
+            "multi-frame evaluation window. Legacy resolves to mean. This option has no "
+            "effect when instance_window is omitted or 1."
+        ),
+    )
+    parser.add_argument(
         '--n_seconds', type=int, default=10,
         help="Length in seconds of each feature-aggregation window."
     )
@@ -246,7 +272,7 @@ def parse_args():
         default=None,
         help=(
             "Classification target and representative timestamp calculation. "
-            "When omitted, existing --use_mid_target/--center_truth behavior is preserved."
+            "When omitted, existing --use_mid_target behavior is preserved."
         ),
     )
     parser.add_argument(
@@ -352,11 +378,6 @@ def parse_args():
     )
 
     parser.add_argument(
-        '--center_truth', type=str, default="false", choices=["true", "false"],
-        help="Use the central ground truth instead of group/window majority (classification) or mean (regression). With classification instance smoothing, probability scores are not centered or grouped equivalently."
-    )
-
-    parser.add_argument(
         '--y_min',
         type=float,
         default=None,
@@ -444,6 +465,17 @@ def main():
         return v.lower() == "true"
     config = vars(args).copy()
 
+    config['resolved_classification_evaluation_method'] = (
+        'majority'
+        if config['classification_evaluation_method'] == 'legacy'
+        else config['classification_evaluation_method']
+    )
+    config['resolved_regression_evaluation_method'] = (
+        'mean'
+        if config['regression_evaluation_method'] == 'legacy'
+        else config['regression_evaluation_method']
+    )
+
     # Fix types
     config['is_NN'] = str2bool(config['is_NN'])
     config['is_regression'] = str2bool(config['is_regression'])
@@ -461,7 +493,6 @@ def main():
     config['compute_daywise_bootstrap'] = str2bool(config['compute_daywise_bootstrap'])
     config['skip_if_output_exists'] = str2bool(config['skip_if_output_exists'])
     config['invert_threshold_logic'] = str2bool(config['invert_threshold_logic'])
-    config['center_truth'] = str2bool(config['center_truth'])
     config['save_fold_txt'] = str2bool(config.get('save_fold_txt', False))
 
     # Parse param_grid JSON if present
@@ -604,7 +635,6 @@ def main():
     join_higher_classes_val = config['join_higher_classes']
     is_regression_val = config['is_regression']
     use_mid_target_val = config.get('use_mid_target', True)
-    center_truth = config.get('center_truth', False)
 
     logger.info("Instantiating Reducer...")
 
@@ -634,7 +664,6 @@ def main():
             time_offset_seconds=time_offset_seconds_val,
             join_higher_classes=join_higher_classes_val,
             use_mid_target=use_mid_target_val,
-            center_truth = center_truth,
             classification_target_method=config.get('classification_target_method'),
         )
 
