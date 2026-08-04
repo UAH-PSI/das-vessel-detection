@@ -84,7 +84,7 @@ The dataset supports two principal tasks:
 2. **Vessel-to-cable distance estimation:** regression using the continuous closest-vessel distance.
 
 The numeric meanings of classes 0 and 1 depend on the configured threshold
-polarity; see the [experiment guide](README-run-experiments.md#class-polarity-and-confusion-matrix-convention)
+polarity; see the [experiment guide](docs/run-experiments.md#class-polarity-and-confusion-matrix-convention)
 for the class and confusion-matrix convention.
 
 For the complete and current technical description, refer to the documentation in the [Zenodo record](https://doi.org/10.5281/zenodo.15611778).
@@ -93,17 +93,20 @@ For the complete and current technical description, refer to the documentation i
 
 The main repository resources include:
 
-| Path                                             | Purpose                                                             |
-|--------------------------------------------------|---------------------------------------------------------------------|
-| `src/`                                           | Dataset loading, partitioning, plotting and reproducibility scripts |
-| `models/`                                        | Public baseline XGBoost classification and regression models        |
-| `scripts/`                                       | Maintained launchers for the best baseline experiment configurations |
-| `data/reduced_dataset_sensor_range_1440_1690.h5` | Ten-minute demonstration extract                                    |
-| `data/fbands.csv`                                | Frequency-band boundaries used for feature extraction               |
-| `data/combined_plot_interval_...0.png`           | Example visualization generated from the demonstration data         |
-| `requirements.txt`                               | Python package requirements                                         |
-| `logos/`                                         | Funding and acknowledgment graphics                                 |
-| `LICENSE`                                        | License applying to the repository software                         |
+| Path                                                                  | Purpose                                                                      |
+|-----------------------------------------------------------------------|------------------------------------------------------------------------------|
+| `src/`                                                                | Dataset loading, partitioning, plotting, and reproducibility scripts         |
+| `models/`                                                             | Public baseline XGBoost classification and regression models                 |
+| `scripts/`                                                            | Maintained launchers for the best baseline experiment configurations         |
+| `docs/`                                                               | Experiment guides, model documentation, tutorial, and README build settings  |
+| `build/`                                                              | Ignored generated documentation, PDFs, and downloaded badge images           |
+| `data/reduced_dataset_sensor_range_1440_1690.h5`                      | Ten-minute demonstration extract                                             |
+| `data/fbands.csv`                                                     | Frequency-band boundaries used for feature extraction                        |
+| `data/combined_plot_interval_20230616T155500_20230616T160500.png`     | Example visualization generated from the demonstration data                  |
+| `requirements.txt`                                                    | Python package requirements                                                  |
+| `Makefile`                                                            | Builds README documentation and generated assets under `build/`              |
+| `logos/`                                                              | Funding and acknowledgment graphics                                          |
+| `LICENSE`                                                             | License applying to the repository software                                  |
 
 This repository is the actively maintained location for software updates and extended reproducibility material. The complete released data remain versioned and preserved in [Zenodo](https://doi.org/10.5281/zenodo.15611778).
 
@@ -196,7 +199,7 @@ The Zenodo `src.zip` archive additionally provides small standalone examples for
 
 ### Baseline AI/ML experiments (supporting the [JSTARS journal](#jstars-cite))
 
-The public repository includes the experiment runner and the baseline XGBoost models for vessel detection (classification) and vessel-distance estimation (regression) that are referenced in the [JSTARS journal](#2.-ieee-jstars-accepted-article). The source code used in the paper experiments was heavily modified to ease its use and to be adapted to the current experimental framework distributed in this repository. This is the reason why there will be minor variations in the performance results reported (partly due to a different random seed used in the original code).
+The public repository includes the experiment runner and the baseline XGBoost models for vessel detection (classification) and vessel-distance estimation (regression) that are referenced in the [JSTARS journal](#2.-ieee-jstars-accepted-article). The source code used in the paper experiments was heavily modified to ease its use and to be adapted to the current experimental framework distributed in this repository. We are also working in fixing inconsistencies and improving the general and specific capabitilities. This is the reason why there will be minor variations in the performance results reported. When possible, we will provide reproducibility scripts.
 
 Run commands from the repository root after completing the [installation](#installation).
 
@@ -206,9 +209,9 @@ Start with these documents:
 
 | Guide                                                                  | Purpose                                                                    |
 |------------------------------------------------------------------------|----------------------------------------------------------------------------|
-| [README-run-experiments.md](README-run-experiments.md)                 | Installation, baseline commands, result files, MLflow, and result analysis |
-| [README-develop-models.md](README-develop-models.md)                   | Reference documentation for adding classification or regression models     |
-| [README-tutorial-develop-models.md](README-tutorial-develop-models.md) | Step-by-step model-development tutorial                                    |
+| [Run experiments](docs/run-experiments.md) | Installation, baseline commands, result files, MLflow, and result analysis |
+| [Model reference](docs/model-reference.md) | Reference documentation for adding classification or regression models |
+| [Model tutorial](docs/model-tutorial.md) | Step-by-step model-development tutorial |
 
 The three maintained baseline launchers that replicate the best experiments in the [JSTARS journal](#2.-ieee-jstars-accepted-article) are:
 

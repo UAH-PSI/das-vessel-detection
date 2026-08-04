@@ -292,7 +292,7 @@ reversed, so class 1 becomes the nearby-vessel condition. Per-class metrics
 treat each class as positive in turn.
 
 The complete TP, TN, FP, and FN interpretation for both polarities is in the
-[experiment guide](README-run-experiments.md#class-polarity-and-confusion-matrix-convention).
+[experiment guide](run-experiments.md#class-polarity-and-confusion-matrix-convention).
 
 ### 3.3 Minimal conventional classifier
 
@@ -518,7 +518,7 @@ Single-day runs do not log the main classification/regression scalar set or stan
 
 ## 6. Known implementation issues
 
-The framework still has concrete implementation gaps that can make an accepted option ineffective, reject an otherwise useful fold, or produce a misleading metric or artifact. The complete backlog, workarounds, and resolution criteria are maintained in [EXPERIMENT-KNOWN-ISSUES.md](EXPERIMENT-KNOWN-ISSUES.md).
+The framework still has concrete implementation gaps that can make an accepted option ineffective, reject an otherwise useful fold, or produce a misleading metric or artifact. The complete backlog, workarounds, and resolution criteria are maintained in the local [known-issues document](known-issues.md).
 
 The highest-impact restrictions for model authors are:
 
