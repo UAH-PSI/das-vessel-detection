@@ -97,7 +97,7 @@ The main repository resources include:
 |-----------------------------------------------------------------------|------------------------------------------------------------------------------|
 | `src/`                                                                | Dataset loading, partitioning, plotting, and reproducibility scripts         |
 | `models/`                                                             | Public baseline XGBoost classification and regression models                 |
-| `scripts/`                                                            | Maintained launchers for the best baseline experiment configurations         |
+| `scripts/`                                                            | Maintained legacy J-STARS and canonical central experiment launchers          |
 | `docs/`                                                               | Experiment guides, model documentation, tutorial, and README build settings  |
 | `build/`                                                              | Ignored generated documentation, PDFs, and downloaded badge images           |
 | `data/reduced_dataset_sensor_range_1440_1690.h5`                      | Ten-minute demonstration extract                                             |
@@ -199,7 +199,12 @@ The Zenodo `src.zip` archive additionally provides small standalone examples for
 
 ### Baseline AI/ML experiments (supporting the [JSTARS journal](#jstars-cite))
 
-The public repository includes the experiment runner and the baseline XGBoost models for vessel detection (classification) and vessel-distance estimation (regression) that are referenced in the [JSTARS journal](#2.-ieee-jstars-accepted-article). The source code used in the paper experiments was heavily modified to ease its use and to be adapted to the current experimental framework distributed in this repository. We are also working in fixing inconsistencies and improving the general and specific capabitilities. This is the reason why there will be minor variations in the performance results reported. When possible, we will provide reproducibility scripts.
+The public repository includes the experiment runner and baseline XGBoost
+models for vessel detection (classification) and vessel-distance estimation
+(regression) associated with the [JSTARS study](#jstars-cite). Since the paper
+experiments, the framework has undergone substantial changes to correct
+inconsistencies, make temporal decisions explicit, and improve usability and
+experimental flexibility.
 
 Run commands from the repository root after completing the [installation](#installation).
 
@@ -213,11 +218,47 @@ Start with these documents:
 | [Model reference](docs/model-reference.md) | Reference documentation for adding classification or regression models |
 | [Model tutorial](docs/model-tutorial.md) | Step-by-step model-development tutorial |
 
-The three maintained baseline launchers that replicate the best experiments in the [JSTARS journal](#2.-ieee-jstars-accepted-article) are:
+#### Legacy J-STARS reproduction
 
-- `scripts/run_xgb_classif_baseline_all_folds-best.sh`: For threshold = 1,000 m, achieves global F1 = 90.11%, class 0 F1 = 84.23%, class 1 F1 = 92.93%, accuracy = 90.24%, and AUC = 94.42%.
-- `scripts/run_xgb_regress_baseline_all_folds-best-1000.sh`: For threshold = 1,000 m, achieves global MAE = 141 m.
-- `scripts/run_xgb_regress_baseline_all_folds-best-5000.sh`: For threshold = 5,000 m, achieves global MAE = 558 m.
+Independent `legacy` option values preserve the reduction, evaluation, and
+timestamp conventions used by the maintained best-paper configurations. This
+compatibility path has been tested for those configurations; it should not be
+interpreted as a generally validated legacy mode for every possible
+command-line combination.
+
+The three five-instance launchers supporting the best experiments in the
+[JSTARS study](#jstars-cite) are:
+
+- `scripts/run_xgb_classification_legacy_1000m_iw5.sh`: classification with a 1,000 m threshold;
+- `scripts/run_xgb_regression_legacy_1000m_iw5.sh`: regression restricted to 1,000 m;
+- `scripts/run_xgb_regression_legacy_5000m_iw5.sh`: regression restricted to 5,000 m.
+
+The corresponding `iw1` scripts retain the legacy reduction and timestamp
+conventions without multi-instance evaluation aggregation. They are controlled
+comparison variants, not additional best-paper configurations. Exact results
+can still vary with dataset revision, dependencies, and runtime environment;
+retain the generated metadata and source revision with every result.
+
+#### Canonical central baseline for new experiments
+
+New experiments should normally start from the `central` launchers. They use:
+
+- the central source-frame target and timestamp during reduction;
+- the central predicted/true value and timestamp during multi-instance evaluation.
+
+Classification launchers use a 1,000 m threshold. Regression launchers are
+provided for 1,000 m and 5,000 m. Every configuration has `iw1` and `iw5`
+variants, where `iw` is the `instance_window`. For example:
+
+- `scripts/run_xgb_classification_central_1000m_iw5.sh`;
+- `scripts/run_xgb_regression_central_1000m_iw5.sh`;
+- `scripts/run_xgb_regression_central_5000m_iw5.sh`.
+
+The central baseline uses the improved interface and is not presented as a
+reproduction of the paper. The [experiment guide](docs/run-experiments.md)
+contains complete commands, and the
+[model reference](docs/model-reference.md#15-legacy-j-stars-compatibility)
+defines the exact meaning of each method and `legacy` value.
 
 Current date-range result files use `final_results` consistently for the principal global metrics in both tasks. Classification values are calculated from the summed fold confusion matrix (apart from mean fold AUC), and regression point estimates pool all evaluated frames; their 95% intervals resample complete folds. Regression additionally retains the separately labeled individual-frame bootstrap alternative in `frame_resampled_results`.
 
