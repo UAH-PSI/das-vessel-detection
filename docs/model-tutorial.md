@@ -118,6 +118,29 @@ This combines three source records. A negative overlap is interpreted relative t
 
 The default is `--apply_log true`. Each value becomes `log(max(value, 1e-23))` before feature aggregation. Keep this fixed while comparing the four model paths unless the experiment is explicitly about the feature transform.
 
+### 3.4 Select the reduction target and timestamp
+
+Reduction combines source records into one model instance, selects its
+training/test target, and independently assigns a representative timestamp.
+This tutorial uses the canonical central convention:
+
+```text
+classification: --classification_target_method central_t
+regression:     --regression_target_method central_t
+both tasks:     --reduction_timestamp_method central_t
+```
+
+With the three-source-frame groups selected in Section 3.2, `central_t`
+means the second source frame. The framework also supports positional,
+aggregate, and binary class-presence target methods; see the
+[model reference](model-reference.md#14-target-selection-and-temporal-controls).
+
+Independent `legacy` values reproduce the maintained best IEEE JSTARS
+configurations after substantial framework improvements. They are not a
+generally validated compatibility mode for arbitrary model-development
+experiments. Start new models with explicit central methods and use the
+maintained legacy launchers when reproducing the paper.
+
 ## 4. Path A: develop a general regression model
 
 Use this path for estimators that follow the scikit-learn interface, including XGBoost, LightGBM, random forests, linear models, and compatible custom estimators.
@@ -171,6 +194,8 @@ python src/model_experiment_hdf5.py \
   --n_seconds 30 \
   --n_overlapping_seconds -10 \
   --regression_threshold 5000 \
+  --regression_target_method central_t \
+  --reduction_timestamp_method central_t \
   --test_date_start 2023-06-16 \
   --run_name tutorial-xgb-regression-smoke
 ```
@@ -252,6 +277,8 @@ python src/model_experiment_hdf5.py \
   --is_regression false \
   --is_NN false \
   --classification_thresholds 1000 \
+  --classification_target_method central_t \
+  --reduction_timestamp_method central_t \
   --invert_threshold_logic true \
   --join_higher_classes true \
   --average_signals channel \
@@ -322,6 +349,8 @@ python src/model_experiment_hdf5.py \
   --n_seconds 30 \
   --n_overlapping_seconds -10 \
   --regression_threshold 5000 \
+  --regression_target_method central_t \
+  --reduction_timestamp_method central_t \
   --test_date_start 2023-06-16 \
   --run_name tutorial-nn-regression-smoke
 ```
@@ -372,6 +401,8 @@ python src/model_experiment_hdf5.py \
   --is_regression false \
   --is_NN true \
   --classification_thresholds 1000 \
+  --classification_target_method central_t \
+  --reduction_timestamp_method central_t \
   --invert_threshold_logic true \
   --join_higher_classes true \
   --balance_classes unbalanced \
@@ -415,6 +446,7 @@ print("Metric fields:", result["metrics"].keys())
 print("Model file:", result["metadata"]["model_file"])
 print("Task is regression:", result["metadata"]["is_regression"])
 print("Task is NN:", result["metadata"]["is_NN"])
+print("Prediction triplets:", result["metrics"].get("prediction_triplets"))
 PY
 ```
 
@@ -441,6 +473,8 @@ python src/model_experiment_hdf5.py \
   --is_regression false \
   --is_NN false \
   --classification_thresholds 1000 \
+  --classification_target_method central_t \
+  --reduction_timestamp_method central_t \
   --invert_threshold_logic true \
   --join_higher_classes true \
   --average_signals channel \
@@ -473,6 +507,12 @@ Classification `final_results` contains accuracy; support-weighted F1, precision
 
 Regression `final_results` contains MAE, RMSE, MSE, and R2. Its point estimates pool all evaluated frames, while each interval resamples complete folds with replacement and recalculates the metric from the selected folds. Regression also stores `frame_resampled_results`, an explicitly separate alternative that bootstraps individual pooled frames. Threshold-specific frame-bootstrap values are stored under `regression_threshold_evaluation[threshold]["frame_resampled_results"]`. The detailed per-day results remain in `metrics_by_day`.
 
+Where predictions are retained, each fold contains synchronized `datetimes`,
+`y_pred`, and `y_true` arrays plus `prediction_triplets` of the form
+`(timestamp, prediction, true_value)`. These are test-set values after any
+evaluation aggregation and timestamp selection; train-set triplets are not
+currently generated.
+
 ### 10.2 Use CSV for a compact report
 
 The date-range run writes `metrics.csv` beside `metrics.joblib`.
@@ -499,7 +539,8 @@ When comparing XGBoost with a simple NN—or two variants of either—keep these
 - feature averaging, window length, overlap, and log transform;
 - regression inclusion/evaluation thresholds;
 - classification balancing;
-- temporal smoothing and ground-truth policy;
+- reduction target and timestamp methods;
+- evaluation window, task-specific evaluation method, and evaluation timestamp method;
 - random state.
 
 Do not compare a single-day value with a date-range global value. Do not treat the simple average of folds as interchangeable with the pooled bootstrap result. Record both the model file and complete CLI configuration.
@@ -508,9 +549,27 @@ Do not compare a single-day value with a date-range global value. Do not treat t
 
 ### 11.1 Smooth consecutive predictions
 
-Add `--instance_window 3` to group three consecutive reduced predictions at evaluation time. Regression averages predictions; classification uses majority vote. With `--center_truth true`, the ground truth is the central target rather than its window average or majority vote.
+Add `--instance_window 3` to group three consecutive reduced instances at
+evaluation time. The canonical central choices are:
 
-This changes the evaluated unit and support, so it defines a new experiment. Classification AUC under smoothing should be interpreted cautiously because labels are voted but probability scores are only truncated, not equivalently aggregated.
+```text
+classification: --classification_evaluation_method central_i
+regression:     --regression_evaluation_method central_i
+both tasks:     --evaluation_timestamp_method central_i
+```
+
+The task-specific method is applied symmetrically to predictions and true
+values. Classification also supports first, last, majority, and binary
+class-presence methods. Regression also supports first, last, minimum, maximum,
+mean, and median. Timestamp selection is independent of value selection.
+`central_i` requires an odd instance window.
+
+With no `--instance_window`, or with `instance_window=1`, evaluation value
+and timestamp methods have no effect. With a larger window, aggregation changes
+the evaluated unit and support; adjacent stride-one outputs overlap and are
+correlated. Classification probability scores are not aggregated consistently
+with the label method, so AUC from an `instance_window > 1` run is not a
+comparable smoothed metric.
 
 ### 11.2 Add close-range regression metrics
 
