@@ -5,6 +5,7 @@
     --is_regression true \
     --regression_threshold 1000 \
     --regression_target_method central_t \
+    --reduction_timestamp_method central_t \
     --test_date_start 2023-06-16 \
     --test_date_end 2023-06-25 \
     --n_seconds 50 \

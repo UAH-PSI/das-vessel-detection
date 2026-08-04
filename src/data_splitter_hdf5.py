@@ -48,44 +48,6 @@ def _nearest_datetime_index(datetimes, target_dt, tolerance):
     return matched_index
 
 
-def _midpoint_timestamp(start, end):
-    """Return the midpoint between two timestamps, preserving their representation."""
-    if isinstance(start, (str, np.str_)):
-        start_text = str(start)
-        end_text = str(end)
-        uses_z_suffix = start_text.endswith("Z")
-        uses_compact_offset = (
-            len(start_text) >= 5
-            and start_text[-5] in "+-"
-            and start_text[-4:].isdigit()
-        )
-
-        def parse_iso_timestamp(value):
-            if value.endswith("Z"):
-                value = value[:-1] + "+00:00"
-            elif (
-                len(value) >= 5
-                and value[-5] in "+-"
-                and value[-4:].isdigit()
-            ):
-                value = value[:-2] + ":" + value[-2:]
-            return datetime.fromisoformat(value)
-
-        start_dt = parse_iso_timestamp(start_text)
-        end_dt = parse_iso_timestamp(end_text)
-        midpoint = start_dt + (end_dt - start_dt) / 2
-
-        separator = "T" if "T" in start_text else " "
-        midpoint_text = midpoint.isoformat(sep=separator)
-        if uses_z_suffix and midpoint_text.endswith("+00:00"):
-            midpoint_text = midpoint_text[:-6] + "Z"
-        elif uses_compact_offset:
-            midpoint_text = midpoint_text[:-3] + midpoint_text[-2:]
-        return midpoint_text
-
-    return start + (end - start) / 2
-
-
 def compute_shap_values(model, X_train, X_data, feature_names, nsamples_background=100, nsamples_explain=None):
     # Create a background sample from X_train
     background = shap.utils.sample(X_train, nsamples=nsamples_background)
@@ -113,7 +75,8 @@ class TripletReducer:
                  join_higher_classes=True, average_signals=False, apply_log=True,
                  epsilon=1e-23, time_offset_seconds=None, use_mid_target=False,
                  sample_seconds=10,
-                 classification_target_method=None):
+                 classification_target_method=None,
+                 reduction_timestamp_method="legacy"):
         """
         Initialize with the data to be reduced and the parameters.
         - X: List of 2D numpy arrays.
@@ -148,6 +111,25 @@ class TripletReducer:
         self.time_offset_seconds = time_offset_seconds
         self.use_mid_target = use_mid_target
         self.sample_seconds = sample_seconds
+        if self.n_seconds < self.sample_seconds or self.n_seconds % self.sample_seconds:
+            raise ValueError(
+                "n_seconds must be a positive multiple of sample_seconds"
+            )
+        valid_timestamp_methods = {"legacy", "first_t", "central_t", "last_t"}
+        if reduction_timestamp_method not in valid_timestamp_methods:
+            raise ValueError(
+                "Invalid reduction_timestamp_method. Expected one of: "
+                + ", ".join(sorted(valid_timestamp_methods))
+            )
+        if (
+            reduction_timestamp_method == "central_t"
+            and (self.n_seconds // self.sample_seconds) % 2 == 0
+        ):
+            raise ValueError(
+                "reduction_timestamp_method='central_t' requires an odd number "
+                "of source frames"
+            )
+        self.reduction_timestamp_method = reduction_timestamp_method
         if classification_target_method is None:
             classification_target_method = "legacy"
         valid_target_methods = {
@@ -232,8 +214,8 @@ class TripletReducer:
             raise ValueError("Invalid value for average_signals. Expected 'none', 'time', 'channel', or 'time_channel'.")
 
     # @time_it
-    def _select_target_and_datetime(self, group_y, group_dt):
-        """Return the configured classification target and representative time."""
+    def _select_target(self, group_y):
+        """Return the configured classification target."""
         method = self.classification_target_method
         middle = len(group_y) // 2
 
@@ -242,21 +224,20 @@ class TripletReducer:
                 target = np.bincount(group_y).argmax()
             else:
                 target = min(group_y)
-            return target, min(group_dt)
+            return target
         if method == "central_t":
-            return group_y[middle], group_dt[middle]
+            return group_y[middle]
         if method == "first_t":
-            return group_y[0], group_dt[0]
+            return group_y[0]
         if method == "last_t":
-            return group_y[-1], group_dt[-1]
+            return group_y[-1]
 
-        timestamp = _midpoint_timestamp(group_dt[0], group_dt[-1])
         if method == "majority":
             labels, counts = np.unique(group_y, return_counts=True)
             winners = labels[counts == counts.max()]
             central_label = group_y[middle]
             target = central_label if central_label in winners else winners[0]
-            return target, timestamp
+            return target
 
         labels = set(np.unique(group_y).tolist())
         if not labels.issubset({0, 1}):
@@ -269,7 +250,20 @@ class TripletReducer:
         else:
             condition_met = np.all(np.asarray(group_y) == selected_class)
         target = selected_class if condition_met else 1 - selected_class
-        return target, timestamp
+        return target
+
+    def _select_reduction_timestamp(self, group_dt):
+        """Return the configured representative timestamp for a reduced window."""
+        method = self.reduction_timestamp_method
+        middle = len(group_dt) // 2
+        if method == "first_t":
+            return group_dt[0]
+        if method == "central_t":
+            return group_dt[middle]
+        if method == "last_t":
+            return group_dt[-1]
+
+        return group_dt[0]  # J-STARS legacy convention
 
     def reduce_triplets(self):
         """Performs the reduction of triplets based on n_seconds and n_overlapping_seconds."""
@@ -308,9 +302,8 @@ class TripletReducer:
             if self.join_higher_classes:
                 group_y = np.clip(group_y, 0, 1)
 
-            target_y, target_dt = self._select_target_and_datetime(
-                group_y, group_dt
-            )
+            target_y = self._select_target(group_y)
+            target_dt = self._select_reduction_timestamp(group_dt)
 
             reduced_X.append(avg_X)
             reduced_y.append(target_y)
@@ -323,6 +316,8 @@ class TripletReducer:
             i += n_samples_per_group - n_overlap_samples
 
 
+        if not (len(reduced_X) == len(reduced_y) == len(reduced_dt)):
+            raise RuntimeError("Reduced features, targets, and timestamps are not aligned")
         if self.ships:
             return np.array(reduced_X), np.array(reduced_y), reduced_dt, reduced_ships
         return np.array(reduced_X), np.array(reduced_y), reduced_dt
@@ -336,7 +331,8 @@ class TripletRegressionReducer:
                  threshold=None, eliminate_within_range=None,
                  use_mid_target=False,
                  regression_target_method=None,
-                 sample_seconds=10):
+                 sample_seconds=10,
+                 reduction_timestamp_method="legacy"):
         """
         Initialize with the data to be reduced and the parameters.
         - X: List of 2D numpy arrays.
@@ -378,6 +374,25 @@ class TripletRegressionReducer:
             )
         self.regression_target_method = regression_target_method
         self.sample_seconds = sample_seconds
+        if self.n_seconds < self.sample_seconds or self.n_seconds % self.sample_seconds:
+            raise ValueError(
+                "n_seconds must be a positive multiple of sample_seconds"
+            )
+        valid_timestamp_methods = {"legacy", "first_t", "central_t", "last_t"}
+        if reduction_timestamp_method not in valid_timestamp_methods:
+            raise ValueError(
+                "Invalid reduction_timestamp_method. Expected one of: "
+                + ", ".join(sorted(valid_timestamp_methods))
+            )
+        if (
+            reduction_timestamp_method == "central_t"
+            and (self.n_seconds // self.sample_seconds) % 2 == 0
+        ):
+            raise ValueError(
+                "reduction_timestamp_method='central_t' requires an odd number "
+                "of source frames"
+            )
+        self.reduction_timestamp_method = reduction_timestamp_method
 
         # Sort the triplets chronologically before applying any offset
         self._sort_triplets()
@@ -494,33 +509,40 @@ class TripletRegressionReducer:
             raise ValueError("Invalid value for average_signals. Expected 'none', 'time', 'channel', or 'time_channel'.")
 
     # @time_it
-    def _select_target_and_datetime(self, group_y, group_dt):
-        """Return the configured regression target and its representative time."""
+    def _select_target(self, group_y):
+        """Return the configured regression target."""
         method = self.regression_target_method
         middle = len(group_y) // 2
 
         if method == "legacy":
-            return group_y[middle], min(group_dt)
+            return group_y[middle]
         if method == "central_t":
             if len(group_y) % 2:
-                return group_y[middle], group_dt[middle]
-            target = np.mean([group_y[middle - 1], group_y[middle]])
-            timestamp = _midpoint_timestamp(
-                group_dt[middle - 1], group_dt[middle]
-            )
-            return target, timestamp
+                return group_y[middle]
+            return np.mean([group_y[middle - 1], group_y[middle]])
         if method == "first_t":
-            return group_y[0], group_dt[0]
+            return group_y[0]
         if method == "last_t":
-            return group_y[-1], group_dt[-1]
+            return group_y[-1]
         if method == "min":
-            target_index = int(np.argmin(group_y))
-            return group_y[target_index], group_dt[target_index]
+            return np.min(group_y)
 
-        timestamp = _midpoint_timestamp(group_dt[0], group_dt[-1])
         if method == "mean":
-            return np.mean(group_y), timestamp
-        return np.median(group_y), timestamp
+            return np.mean(group_y)
+        return np.median(group_y)
+
+    def _select_reduction_timestamp(self, group_dt):
+        """Return the configured representative timestamp for a reduced window."""
+        method = self.reduction_timestamp_method
+        middle = len(group_dt) // 2
+        if method == "first_t":
+            return group_dt[0]
+        if method == "central_t":
+            return group_dt[middle]
+        if method == "last_t":
+            return group_dt[-1]
+
+        return group_dt[0]  # J-STARS legacy convention
 
     def reduce_triplets(self):
         """Performs the reduction of triplets based on n_seconds and n_overlapping_seconds."""
@@ -559,9 +581,8 @@ class TripletRegressionReducer:
             #     avg_X = np.log(np.maximum(avg_X, self.epsilon))
 
 
-            target_y, target_dt = self._select_target_and_datetime(
-                group_y, group_dt
-            )
+            target_y = self._select_target(group_y)
+            target_dt = self._select_reduction_timestamp(group_dt)
 
             if group_ships:
                 flattened_ships = [ship for sublist in group_ships for ship in sublist]
@@ -574,6 +595,8 @@ class TripletRegressionReducer:
 
             i += n_samples_per_group - n_overlap_samples
 
+        if not (len(reduced_X) == len(reduced_y) == len(reduced_dt)):
+            raise RuntimeError("Reduced features, targets, and timestamps are not aligned")
         if self.ships:
             return np.array(reduced_X), np.array(reduced_y), reduced_dt, reduced_ships
         else:

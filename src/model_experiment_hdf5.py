@@ -228,6 +228,16 @@ def parse_args():
         help="Length in seconds of each feature-aggregation window."
     )
     parser.add_argument(
+        '--reduction_timestamp_method',
+        choices=['legacy', 'first_t', 'central_t', 'last_t'],
+        default='legacy',
+        help=(
+            "Representative timestamp assigned to each reduced feature window. "
+            "First, central, and last select the start time of that source frame; "
+            "legacy reproduces the J-STARS convention and selects the first frame."
+        ),
+    )
+    parser.add_argument(
         '--n_overlapping_seconds', type=int, default=-10,
         help=(
             "Number of seconds each aggregation window overlaps with its predecessor. "
@@ -651,6 +661,7 @@ def main():
             threshold=config.get('regression_threshold', None),
             use_mid_target=use_mid_target_val,
             regression_target_method=config.get('regression_target_method'),
+            reduction_timestamp_method=config['reduction_timestamp_method'],
         )
     else: # Classification
         logger.info("Using TripletReducer for classification task.")
@@ -665,6 +676,7 @@ def main():
             join_higher_classes=join_higher_classes_val,
             use_mid_target=use_mid_target_val,
             classification_target_method=config.get('classification_target_method'),
+            reduction_timestamp_method=config['reduction_timestamp_method'],
         )
 
     X_reduced, y_reduced, dt_reduced = reducer.reduce_triplets()
