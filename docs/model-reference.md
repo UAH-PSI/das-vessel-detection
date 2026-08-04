@@ -70,16 +70,70 @@ The grouping step advances by `group_size - overlap_size`. A positive `--n_overl
 
 > **Warning:** Use `--time_offset_seconds` only for datasets known to contain a feature/target timestamp offset. Current HDF5 releases are already synchronized and require no offset.
 
-Within each feature-aggregation group:
+Reduction and evaluation are separate temporal stages:
 
-- Regression with `--use_mid_target true` uses the central target; `false` uses the minimum target.
-- Classification with `--use_mid_target true --center_truth true` uses the central label.
-- Classification with `--use_mid_target true --center_truth false` uses the modal label (ties resolve to the smallest class through `numpy.bincount`).
-- Classification with `--use_mid_target false` uses the minimum label.
+1. **Reduction** groups source frames according to `--n_seconds` and
+   `--n_overlapping_seconds`, produces one feature instance, selects its
+   target, and assigns a representative source-frame timestamp.
+2. **Evaluation** optionally groups `--instance_window W` consecutive reduced
+   instances, applies one method to predictions and true values, and assigns a
+   representative reduced-instance timestamp.
 
-`--center_truth` has a second role during evaluation smoothing, described in Section 4.2. These are separate stages: first it can affect the target of each feature group, and later it can affect the ground truth of an instance window.
+The suffix `_t` denotes a source-frame position inside a reduction group;
+`_i` denotes a reduced-instance position inside an evaluation window.
+Target/value selection and timestamp selection are independent.
 
-### 1.5 Implementing a conventional estimator
+Reduction target methods are task-specific:
+
+| Task | Option | Methods |
+|------|--------|---------|
+| Classification | `--classification_target_method` | `legacy`, `central_t`, `first_t`, `last_t`, `min`, `majority`, `any_class_0`, `all_class_0`, `any_class_1`, `all_class_1` |
+| Regression | `--regression_target_method` | `legacy`, `central_t`, `first_t`, `last_t`, `min`, `mean`, `median` |
+
+Positional target methods use index `len(group) // 2` for `central_t`; with an
+even group this is the later of the two central frames. Use an odd number of
+source frames when the scientific intent is an unambiguous center.
+Classification `majority` prefers the central label when it is among tied
+winners and otherwise selects the lowest tied label. The `any_class_*` and
+`all_class_*` methods require binary labels. Regression aggregation has its
+ordinary numeric meaning.
+
+`--reduction_timestamp_method` independently accepts `legacy`, `first_t`,
+`central_t`, or `last_t`. It selects the start timestamp of the indicated
+source frame; `central_t` requires an odd number of source frames. Evaluation
+methods and timestamps are defined in Section 4.2.
+
+### 1.5 Legacy J-STARS compatibility
+
+The experiment framework has undergone substantial functional and usability
+changes since the experiments reported in the IEEE JSTARS paper. Explicit
+`legacy` method values preserve the reduction, evaluation, and timestamp
+conventions used by the maintained best J-STARS experiment configurations.
+These paths have been tested for those best-experiment launchers; they are not
+a generally validated compatibility mode for every possible combination of
+command-line options.
+
+| Task | Option | Meaning of `legacy` |
+|------|--------|---------------------|
+| Classification | `--classification_target_method` | Modal label; ties select the lowest numeric class |
+| Classification | `--classification_evaluation_method` | Majority aggregation of predictions and true labels; ties select the lowest numeric class |
+| Regression | `--regression_target_method` | Central source-frame target |
+| Regression | `--regression_evaluation_method` | Mean aggregation of predictions and true values |
+| Both | `--reduction_timestamp_method` | First source-frame timestamp |
+| Both | `--evaluation_timestamp_method` | First reduced-instance timestamp |
+
+`legacy` is not one global switch: it is an independent accepted value for
+each method option. The supported paper configuration is recorded by the
+maintained `scripts/run_xgb_*_legacy_*.sh` launchers. Mixing individual legacy
+values with new methods is technically possible, but such combinations are not
+part of the validated paper-reproduction configuration.
+
+The maintained `central` launchers provide the canonical new baseline:
+`central_t` selects the reduction target and timestamp, while `central_i`
+selects the evaluation values and timestamp. This baseline uses the improved
+interface and should not be described as reproducing the paper.
+
+### 1.6 Implementing a conventional estimator
 
 A conventional model file must define a zero-argument `load_model` and return an object with `fit(X, y)` and `predict(X)`. Classification additionally needs `predict_proba(X)` returning at least two columns because AUC is calculated from column 1.
 
@@ -102,7 +156,7 @@ The supplied XGBoost examples are:
 - `models/baseline_xgb_regression_model.py`
 - `models/baseline_xgb_classification_model.py`
 
-### 1.6 Implementing a PyTorch model
+### 1.7 Implementing a PyTorch model
 
 A PyTorch model file must define:
 
@@ -121,10 +175,10 @@ The framework sets Python, NumPy, and PyTorch seeds, uses deterministic cuDNN se
 The NN execution controls are `--nn_hidden_dim N` (the `hidden_dim` passed to `load_model`, default 256), `--nn_batch_size N` (training batch size, default 32), `--nn_epochs N` (maximum epochs, default 100), and `--nn_patience N` (epochs without training-loss improvement before early stopping, default 20). Because batches use `drop_last=True`, a training fold smaller than `--nn_batch_size` produces no complete training batch. Although `--nn_lr RATE` is recorded, the current handler does not apply it to the optimizer; set the learning rate when constructing the optimizer in `load_model`.
 
 The public repository intentionally distributes only the two baseline XGBoost
-model files. Sections 2.3 and 3.3 provide complete inline PyTorch contracts
+model files. Sections 2.3 and 3.4 provide complete inline PyTorch contracts
 that can be saved as new model files when developing an NN.
 
-### 1.7 Command-line control map
+### 1.8 Command-line control map
 
 The following table maps every accepted command-line option to the part of execution it controls. Boolean options take the literal value `true` or `false`. Defaults are shown by `python src/model_experiment_hdf5.py --help` and may change in later revisions.
 
@@ -141,7 +195,9 @@ The following table maps every accepted command-line option to the part of execu
 | Target inclusion           | `--y_min VALUE`, `--y_max VALUE`                                             | Inclusively filters observations using the original HDF5 `y`, before reduction. Either bound may be used alone.                                                                                                    |
 | Regression target          | `--regression_threshold T`                                                   | Removes regression targets above `T` before grouping; the default is 5000.                                                                                                                                         |
 | Regression evaluation      | `--regression_evaluation_threshold T`                                        | Adds metrics for reduced test targets `<= T` without changing training or overall metrics.                                                                                                                         |
-| Target selection           | `--use_mid_target true\|false`                                               | Selects the central target of a group (`true`, default) or its minimum (`false`), subject to the classification behavior in Section 1.4.                                                                           |
+| Classification reduction  | `--classification_target_method METHOD`                                     | Selects the reduced classification target as described in Section 1.4; `legacy` preserves the tested J-STARS convention.                                                                                          |
+| Regression reduction      | `--regression_target_method METHOD`                                         | Selects the reduced regression target as described in Section 1.4; `legacy` preserves the tested J-STARS convention.                                                                                              |
+| Reduction timestamp       | `--reduction_timestamp_method METHOD`                                       | Selects the first, central, or last source-frame timestamp independently of the target; `legacy` selects the first.                                                                                                |
 | Temporal alignment         | `--time_offset_seconds N`                                                    | Pairs features at time `t` with targets near `t + N`; unmatched observations are removed.                                                                                                                          |
 | Feature geometry           | `--reduce_to_size N`                                                         | Retains a centered slice of `N` sensor channels; omission retains every channel.                                                                                                                                   |
 | Feature grouping           | `--n_seconds N`                                                              | Sets the duration of each aggregation window; source observations are assumed to be 10 seconds apart.                                                                                                              |
@@ -151,9 +207,11 @@ The following table maps every accepted command-line option to the part of execu
 | Training folds             | `--test_date_start DATE`, `--test_date_end DATE`                             | Selects one held-out day or an inclusive range of held-out daily folds. Omitting the end date gives single-day mode.                                                                                               |
 | Classification training    | `--balance_classes METHOD`                                                   | Selects `unbalanced`, `smote`, `adasyn`, `naive`, or `undersample` balancing of each training fold.                                                                                                                |
 | Evaluation smoothing       | `--instance_window W`                                                        | Evaluates stride-one temporal windows of `W` reduced observations; omission evaluates individual reduced observations.                                                                                             |
-| Evaluation smoothing       | `--center_truth true\|false`                                                 | Uses the center ground truth rather than an average or vote during instance-window evaluation; it also participates in grouped classification target selection.                                                    |
+| Classification evaluation | `--classification_evaluation_method METHOD`                                 | Applies the selected method symmetrically to predicted and true classification labels when `W > 1`; `legacy` is majority.                                                                                       |
+| Regression evaluation     | `--regression_evaluation_method METHOD`                                     | Applies the selected method symmetrically to predicted and true regression values when `W > 1`; `legacy` is mean.                                                                                               |
+| Evaluation timestamp      | `--evaluation_timestamp_method METHOD`                                     | Selects the first, central, or last reduced-instance timestamp independently of values when `W > 1`; `legacy` selects the first.                                                                                |
 | Reproducibility            | `--random_state N`                                                           | Controls the conventional train/validation split, resampling, PyTorch seeds, and most bootstrap operations.                                                                                                        |
-| NN training                | `--nn_hidden_dim N`, `--nn_batch_size N`, `--nn_epochs N`, `--nn_patience N` | Controls the NN handler as detailed in Section 1.6.                                                                                                                                                                |
+| NN training                | `--nn_hidden_dim N`, `--nn_batch_size N`, `--nn_epochs N`, `--nn_patience N` | Controls the NN handler as detailed in Section 1.7.                                                                                                                                                                |
 | NN training                | `--nn_lr RATE`                                                               | Recorded but currently does not alter the optimizer; define the optimizer learning rate in `load_model`.                                                                                                           |
 | Uncertainty                | `--compute_daywise_bootstrap true\|false`                                    | Adds sample-level uncertainty to classification fold metrics; it is currently unused by the regression evaluator.                                                                                                  |
 | Interpretation             | `--freq_limit_joblib FILE`                                                   | Enables optional frequency-band SHAP analysis and storage; it does not change ordinary fitting or prediction.                                                                                                      |
@@ -173,7 +231,7 @@ The following table maps every accepted command-line option to the part of execu
 | Accepted inactive controls | `--vessel_joblib_path FILE`                                                  | Accepted but does not affect the active pipeline.                                                                                                                                                                  |
 | Accepted inactive controls | `--skip_if_output_exists true\|false`                                        | Accepted and defaults to `true`, but the active pipeline does not currently consult it before executing.                                                                                                           |
 
-### 1.8 Reproducibility and model-development checklist
+### 1.9 Reproducibility and model-development checklist
 
 Before a full date-range run:
 
@@ -199,6 +257,12 @@ Three controls that sound similar have different purposes:
 - `--regression_evaluation_threshold T` leaves training and overall evaluation unchanged, then reports a second view for test examples whose reduced true target is `<= T`.
 
 The accepted `--saturation_threshold` currently does not reach the reducer and does not clip targets. Do not use it as evidence that clipping occurred.
+
+`--regression_target_method` selects one target from every reduction group:
+`central_t`, `first_t`, and `last_t` select a source-frame position;
+`min`, `mean`, and `median` aggregate the group. `legacy` selects the
+central target. This reduced target is used for training and becomes the
+per-instance test truth before any evaluation-time aggregation.
 
 ### 2.2 Minimal conventional regression model
 
@@ -278,6 +342,17 @@ For several sorted thresholds `T0 < T1 < ...`, the initial label is zero and is 
 The current evaluator and date-range aggregation are explicitly binary: they select probability column 1, reshape daily confusion matrices to 2 by 2, and calculate final metrics for classes 0 and 1. Therefore, keep `--join_higher_classes true` for supported experiments. A true multiclass extension requires corresponding changes to `ModelEvaluator` and the global aggregation in `PipelineExecutorHDF5`, not only a multiclass estimator.
 
 If an external target is supplied, threshold construction is skipped. The current binary restrictions still apply to evaluation.
+
+`--classification_target_method` selects the reduced label used for training
+and as the per-instance test truth. Positional methods select the central,
+first, or last source label. `legacy` uses `numpy.bincount(...).argmax()`,
+so ties select the lowest numeric class. The explicit `majority` method
+instead selects the central label when it is among tied winners. The
+`any_class_*` and `all_class_*` methods express whether a selected binary
+class occurs in any or all source frames. For binary labels, `min`,
+`any_class_0`, and `all_class_1` are numerically equivalent; conversely,
+`any_class_1` and `all_class_0` are equivalent to the numeric maximum. The
+semantic names make the intended condition explicit.
 
 ### 3.2 Class polarity and confusion-matrix convention
 
@@ -385,11 +460,33 @@ A single-day run writes the evaluator's fold dictionary. It has no `metrics_by_d
 
 ### 4.2 Evaluation-time temporal smoothing
 
-With no `--instance_window`, metrics use one prediction per reduced feature group. With `--instance_window W` greater than one, test observations are sorted by datetime and all stride-one windows of `W` observations are used. There are `N - W + 1` evaluated windows.
+With no `--instance_window`, or with `--instance_window 1`, metrics use one
+prediction and one reduced truth per reduced feature group. Evaluation value
+and timestamp methods have no effect in that case. With
+`--instance_window W` greater than one, test observations are sorted by
+datetime and all stride-one windows of `W` observations are used. There are
+`N - W + 1` evaluated windows.
 
-For regression, predictions are averaged within each instance window. Ground truth is also averaged unless `--center_truth true`, in which case the central true value is used.
+`--classification_evaluation_method` applies the same method to predicted and
+true labels. It accepts `central_i`, `first_i`, `last_i`, `majority`,
+`any_class_0`, `all_class_0`, `any_class_1`, and `all_class_1`;
+`legacy` resolves to `majority`. Majority ties select the lowest numeric
+class. Class-presence methods require binary labels.
 
-For classification, predictions use majority vote. Ground truth uses majority vote unless `--center_truth true`, in which case the central true class is used. Ties resolve to the smallest class. Classification probabilities are currently only truncated to the new output length; they are not grouped or centered in parallel with the voted labels. Therefore, interpret AUC from a smoothed run with caution.
+`--regression_evaluation_method` applies the same method to predicted and true
+values. It accepts `central_i`, `first_i`, `last_i`, `min`, `max`,
+`mean`, and `median`; `legacy` resolves to `mean`.
+
+`central_i` requires an odd `instance_window`. Because the windows advance
+by one reduced instance, adjacent evaluated outputs overlap and are correlated.
+They must not be treated as statistically independent observations.
+
+`--evaluation_timestamp_method` independently selects `first_i`,
+`central_i`, or `last_i` from the propagated reduced timestamps;
+`legacy` selects `first_i`. Classification probability scores are not
+aggregated in parallel with the selected label method. Therefore, AUC from a
+classification run with `instance_window > 1` is not a reliable smoothed
+counterpart of the reported label metrics.
 
 ### 4.3 Classification metrics
 
@@ -447,8 +544,10 @@ For valid comparisons, keep these controls fixed:
 
 - `--classification_thresholds`, `--invert_threshold_logic`, and `--join_higher_classes` define classification labels.
 - `--regression_threshold`, `--y_min`, and `--y_max` change included samples; `--regression_evaluation_threshold` only adds a subset view.
-- `--n_seconds`, `--n_overlapping_seconds`, `--average_signals`, `--apply_log`, `--use_mid_target`, and `--time_offset_seconds` change the training examples or targets.
-- `--instance_window` and `--center_truth` change the units evaluated and can reduce support.
+- `--n_seconds`, `--n_overlapping_seconds`, `--average_signals`, `--apply_log`, the task-specific target method, and `--time_offset_seconds` change the training examples or targets.
+- `--reduction_timestamp_method` changes the timestamp associated with each reduced instance, not its feature or target value.
+- `--instance_window` and the task-specific evaluation method change the units evaluated and can reduce support.
+- `--evaluation_timestamp_method` changes the timestamp associated with each evaluated output, not its predicted or true value.
 - `--balance_classes` changes classification training data, not test data.
 - `--test_date_start`/`--test_date_end` determine the held-out folds and whether global aggregation exists.
 - `--random_state` affects the internal train/validation split, balancing, PyTorch training, and regression/AUC bootstraps. Classification confusion- matrix bootstraps use their helper's fixed seed 42.
@@ -482,7 +581,17 @@ The Joblib file contains:
 
 For date ranges, classification `metrics` contains aggregated and average confusion matrices, average and fold-weighted classification reports, `metrics_by_day`, and canonical `final_results`. Regression contains `average_metrics`, `fold_weighted_metrics`, `metrics_by_day`, canonical `final_results`, and the alternative `frame_resampled_results`, plus `regression_threshold_evaluation` when requested.
 
-Unless disabled by programmatic configuration, each day also stores `y_true`, `y_pred`, and datetimes. Regression stores residuals. With `--freq_limit_joblib FILE`, each day additionally stores sampled train/test SHAP values, data, base values, and frequency-band feature names. This option enables an interpretation/export path; it does not alter ordinary model fitting or prediction. These arrays can make the Joblib file large.
+Unless disabled by programmatic configuration, each day also stores synchronized
+`y_true`, `y_pred`, and `datetimes` arrays plus
+`prediction_triplets`. Every triplet has the form
+`(timestamp, prediction, true_value)` after evaluation aggregation and
+timestamp selection. Equal-length assertions protect this alignment. The
+framework does not currently generate corresponding train-set triplets.
+Regression also stores residuals. With `--freq_limit_joblib FILE`, each day
+additionally stores sampled train/test SHAP values, data, base values, and
+frequency-band feature names. This option enables an interpretation/export
+path; it does not alter ordinary model fitting or prediction. These arrays can
+make the Joblib file large.
 
 ### 5.3 CSV schema
 
@@ -527,7 +636,7 @@ The highest-impact restrictions for model authors are:
 | Inactive controls | `--nn_lr`, `--balance_test`, `--saturation_threshold`, `--perform_grid_search`, `--param_grid`, `--model_output_suffix`, `--vessel_joblib_path`, and `--skip_if_output_exists` do not affect the active execution path. | Do not cite these values as operations or hyperparameters that occurred. Use the workarounds in the detailed issue document. |
 | Partial controls | `--compute_daywise_bootstrap` is classification-only in practice, and `--save_fold_txt` is unavailable as a supported public workflow. | Use regression `final_results` for global uncertainty and Joblib for supported fold data. |
 | Classification | Evaluation is binary even though the CLI can construct multiple classes; single-class folds can fail AUC. | Keep `--join_higher_classes true`, profile per-day class support, and do not claim multiclass support. |
-| Smoothed AUC | `--instance_window` votes labels but does not aggregate probability scores equivalently. | Do not use smoothed-run AUC as a comparable result. |
+| Smoothed AUC | With `instance_window > 1`, labels use the selected classification evaluation method but probability scores are not aggregated equivalently. | Do not use smoothed-run AUC as a comparable result. |
 | NN training | Early stopping monitors training loss, `--nn_lr` is inactive, and `drop_last=True` can empty a small fold. | Set learning rate in `load_model` and keep `--nn_batch_size` no larger than the smallest training fold. |
 | Conventional training | Estimators without `eval_set` still lose the 20% validation split. | Report that such models currently fit on 80% of the non-test pool. |
 | Metrics | `RMSE_STD` is the standard deviation of squared errors, not uncertainty of RMSE. | Do not interpret `RMSE_STD` as RMSE uncertainty; use `final_results` for principal intervals. |
