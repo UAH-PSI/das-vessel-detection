@@ -2,10 +2,11 @@
 
 This guide explains how to launch, monitor, inspect, compare, and preserve experiments produced by `src/model_experiment_hdf5.py`. It is organized as an operational reference with a short first-run walkthrough.
 
-The primary examples use the canonical central XGBoost baseline:
+The primary examples use the canonical improved XGBoost baseline:
 
 - central reduction target and reduction timestamp;
-- central evaluation values and evaluation timestamp;
+- majority classification or mean regression evaluation, applied symmetrically
+  to predictions and truth, with a central evaluation timestamp;
 - 50-second feature windows, five-instance evaluation windows, and channel averaging;
 - a 1,000 m regression range or classification threshold.
 
@@ -49,7 +50,7 @@ python src/model_experiment_hdf5.py \
   --regression_threshold 1000 \
   --regression_target_method central_t \
   --reduction_timestamp_method central_t \
-  --regression_evaluation_method central_i \
+  --regression_evaluation_method mean \
   --evaluation_timestamp_method central_i \
   --test_date_start 2023-06-16 \
   --test_date_end 2023-06-25 \
@@ -60,7 +61,7 @@ python src/model_experiment_hdf5.py \
   --apply_log true \
   --reduce_to_size 250 \
   --random_state 42 \
-  --run_name xgb-regression-central-1000m-iw5 \
+  --run_name xgb-regression-central-mean-1000m-iw5 \
   --mlflow_experiment_name DAS-XGBoost-regression-central-baseline \
   --mlflow_tracking_uri sqlite:///mlflow.db
 ```
@@ -68,10 +69,15 @@ python src/model_experiment_hdf5.py \
 The equivalent maintained launcher is:
 
 ```bash
-bash scripts/run_xgb_regression_central_1000m_iw5.sh
+bash scripts/run_xgb_regression_central_mean_1000m_iw5.sh
 ```
 
 This experiment removes targets above 1,000 m before training and evaluation. Its error values must therefore be compared only with experiments using the same target population. A lower MAE than a 5,000 m experiment does not, by itself, prove that the model is better.
+
+This baseline uses the central source-frame target and timestamp so that the
+reduced truth is aligned with the temporal center of its feature window. Mean
+evaluation smooths predictions and true values symmetrically, while the
+`central_i` timestamp represents the center of each evaluated window.
 
 ### 1.3 Run the canonical classification baseline
 
@@ -84,7 +90,7 @@ python src/model_experiment_hdf5.py \
   --classification_thresholds 1000 \
   --classification_target_method central_t \
   --reduction_timestamp_method central_t \
-  --classification_evaluation_method central_i \
+  --classification_evaluation_method majority \
   --evaluation_timestamp_method central_i \
   --invert_threshold_logic false \
   --test_date_start 2023-06-16 \
@@ -98,7 +104,7 @@ python src/model_experiment_hdf5.py \
   --join_higher_classes true \
   --balance_classes unbalanced \
   --random_state 42 \
-  --run_name xgb-classification-central-1000m-iw5 \
+  --run_name xgb-classification-central-majority-1000m-iw5 \
   --mlflow_experiment_name DAS-XGBoost-classification-central-baseline \
   --mlflow_tracking_uri sqlite:///mlflow.db
 ```
@@ -106,8 +112,14 @@ python src/model_experiment_hdf5.py \
 Or use:
 
 ```bash
-bash scripts/run_xgb_classification_central_1000m_iw5.sh
+bash scripts/run_xgb_classification_central_majority_1000m_iw5.sh
 ```
+
+This baseline uses the central source-frame target and timestamp so that the
+reduced truth is aligned with the temporal center of its feature window.
+Majority evaluation provides categorical temporal smoothing and is applied
+symmetrically to predictions and true labels, while the `central_i` timestamp
+represents the center of each evaluated window.
 
 With `--invert_threshold_logic false`, class 1 means distance greater than 1,000 m and class 0 means distance at most 1,000 m. Preserve this interpretation when reading class-specific precision, recall, and F1.
 
@@ -174,7 +186,7 @@ python src/model_experiment_hdf5.py \
   --classification_thresholds 1000 \
   --classification_target_method central_t \
   --reduction_timestamp_method central_t \
-  --classification_evaluation_method central_i \
+  --classification_evaluation_method majority \
   --evaluation_timestamp_method central_i \
   --average_signals channel \
   --n_seconds 50 \
@@ -359,15 +371,16 @@ Automatic paths include a UTC timestamp and random execution identifier, so repe
 The launch scripts resolve their own location, change to the repository root, and run the complete command. They are convenient reproducibility records:
 
 ```bash
-bash scripts/run_xgb_regression_central_1000m_iw5.sh
-bash scripts/run_xgb_classification_central_1000m_iw5.sh
+bash scripts/run_xgb_regression_central_mean_1000m_iw5.sh
+bash scripts/run_xgb_classification_central_majority_1000m_iw5.sh
 ```
 
 Inspect a script before running it on another machine, particularly its dataset path, date range, virtual-environment assumptions, and MLflow URI.
 
 Use the `*_legacy_*_iw5.sh` launchers only when reproducing the maintained
-best J-STARS configurations. Use the `*_central_*` launchers as the starting
-point for new experiments.
+best J-STARS configurations. Use the `*_central_majority_*` classification and
+`*_central_mean_*` regression launchers as the starting point for new
+experiments.
 
 ### 5.2 Run in a terminal multiplexer on remote machines
 

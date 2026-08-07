@@ -234,9 +234,10 @@ The returned estimator must provide:
 
 The evaluator uses probability column 1 for ROC AUC. The current experiment aggregation is binary, so a new classifier should initially preserve this two-class contract.
 
-For the complete list of inactive controls and unresolved evaluation,
-training, metric, and persistence defects, see
-[known-issues document](known-issues.md).
+The highest-impact inactive controls and implementation restrictions are
+summarized in the [model reference](model-reference.md#6-known-implementation-issues).
+Report additional defects through the repository
+[issue tracker](https://github.com/UAH-PSI/das-vessel-detection/issues).
 
 ### 5.2 Define what class 1 means
 
@@ -461,7 +462,7 @@ For regression, inspect `MAE`, `RMSE`, `MSE`, `R2`, `SUPPORT`, and residual diag
 After the selected path succeeds on one day, reuse the same command and add an end date:
 
 ```text
---test_date_start 2023-06-16 --test_date_end 2023-06-26
+--test_date_start 2023-06-16 --test_date_end 2023-06-25
 ```
 
 Also change the run name from `...-smoke` to a descriptive scientific name. For example, the full XGBoost classification command becomes:
@@ -482,7 +483,7 @@ python src/model_experiment_hdf5.py \
   --n_overlapping_seconds -10 \
   --balance_classes unbalanced \
   --test_date_start 2023-06-16 \
-  --test_date_end 2023-06-26 \
+  --test_date_end 2023-06-25 \
   --run_name tutorial-xgb-classification-full
 ```
 
@@ -550,19 +551,22 @@ Do not compare a single-day value with a date-range global value. Do not treat t
 ### 11.1 Smooth consecutive predictions
 
 Add `--instance_window 3` to group three consecutive reduced instances at
-evaluation time. The canonical central choices are:
+evaluation time. The canonical choices are:
 
 ```text
-classification: --classification_evaluation_method central_i
-regression:     --regression_evaluation_method central_i
+classification: --classification_evaluation_method majority
+regression:     --regression_evaluation_method mean
 both tasks:     --evaluation_timestamp_method central_i
 ```
 
 The task-specific method is applied symmetrically to predictions and true
-values. Classification also supports first, last, majority, and binary
-class-presence methods. Regression also supports first, last, minimum, maximum,
-mean, and median. Timestamp selection is independent of value selection.
-`central_i` requires an odd instance window.
+values. Majority is the natural categorical smoother for classification, while
+mean is the corresponding numeric smoother for regression. The central
+timestamp represents the temporal center of the evaluated window. Classification
+also supports first, central, last, and binary class-presence methods.
+Regression also supports first, central, last, minimum, maximum, and median.
+Timestamp selection is independent of value selection. `central_i` requires an
+odd instance window.
 
 With no `--instance_window`, or with `instance_window=1`, evaluation value
 and timestamp methods have no effect. With a larger window, aggregation changes
@@ -627,7 +631,9 @@ Inspect class counts for the held-out day. Both true classes must occur. Also ve
 
 ### No CSV was generated
 
-A single-day run has no `metrics_by_day` aggregation and currently produces no CSV. Add `--test_date_end` for a date-range experiment and see EFW-020 in the known-issues document.
+A single-day run has no `metrics_by_day` aggregation and currently produces no
+CSV. Add `--test_date_end` for a date-range experiment. The output limitation
+is summarized in the [model reference](model-reference.md#6-known-implementation-issues).
 
 ### No `mlruns/` directory appeared
 

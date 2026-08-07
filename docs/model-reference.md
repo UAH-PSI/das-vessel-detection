@@ -128,10 +128,16 @@ maintained `scripts/run_xgb_*_legacy_*.sh` launchers. Mixing individual legacy
 values with new methods is technically possible, but such combinations are not
 part of the validated paper-reproduction configuration.
 
-The maintained `central` launchers provide the canonical new baseline:
-`central_t` selects the reduction target and timestamp, while `central_i`
-selects the evaluation values and timestamp. This baseline uses the improved
-interface and should not be described as reproducing the paper.
+The canonical new baseline uses `central_t` for the reduction target and
+timestamp, task-appropriate aggregation at evaluation (`majority` for
+classification and `mean` for regression), and `central_i` for the evaluation
+timestamp. Central reduction aligns the target with the temporal center of the
+feature window. Majority classification and mean regression smooth consecutive
+outputs while applying the same operation to predictions and truth, and the
+central evaluation timestamp represents the center of the resulting window.
+Use odd-sized windows whenever a central timestamp is selected. This baseline
+uses the improved interface and should not be described as reproducing the
+paper.
 
 ### 1.6 Implementing a conventional estimator
 
@@ -293,7 +299,7 @@ python src/model_experiment_hdf5.py \
   --regression_threshold 5000 \
   --regression_evaluation_threshold 1000 \
   --test_date_start 2023-06-16 \
-  --test_date_end 2023-06-26 \
+  --test_date_end 2023-06-25 \
   --run_name my-regressor
 ```
 
@@ -399,7 +405,7 @@ python src/model_experiment_hdf5.py \
   --n_overlapping_seconds -10 \
   --balance_classes unbalanced \
   --test_date_start 2023-06-16 \
-  --test_date_end 2023-06-26 \
+  --test_date_end 2023-06-25 \
   --run_name my-classifier
 ```
 
@@ -627,13 +633,17 @@ Single-day runs do not log the main classification/regression scalar set or stan
 
 ## 6. Known implementation issues
 
-The framework still has concrete implementation gaps that can make an accepted option ineffective, reject an otherwise useful fold, or produce a misleading metric or artifact. The complete backlog, workarounds, and resolution criteria are maintained in the local [known-issues document](known-issues.md).
+The framework still has concrete implementation gaps that can make an accepted
+option ineffective, reject an otherwise useful fold, or produce a misleading
+metric or artifact. The highest-impact restrictions are summarized below.
+Please report additional defects or unclear behavior through the repository
+[issue tracker](https://github.com/UAH-PSI/das-vessel-detection/issues).
 
 The highest-impact restrictions for model authors are:
 
 | Area | Current restriction | Required user action |
 |------|---------------------|----------------------|
-| Inactive controls | `--nn_lr`, `--balance_test`, `--saturation_threshold`, `--perform_grid_search`, `--param_grid`, `--model_output_suffix`, `--vessel_joblib_path`, and `--skip_if_output_exists` do not affect the active execution path. | Do not cite these values as operations or hyperparameters that occurred. Use the workarounds in the detailed issue document. |
+| Inactive controls | `--nn_lr`, `--balance_test`, `--saturation_threshold`, `--perform_grid_search`, `--param_grid`, `--model_output_suffix`, `--vessel_joblib_path`, and `--skip_if_output_exists` do not affect the active execution path. | Do not cite these values as operations or hyperparameters that occurred. Follow the supported alternatives described in this guide. |
 | Partial controls | `--compute_daywise_bootstrap` is classification-only in practice, and `--save_fold_txt` is unavailable as a supported public workflow. | Use regression `final_results` for global uncertainty and Joblib for supported fold data. |
 | Classification | Evaluation is binary even though the CLI can construct multiple classes; single-class folds can fail AUC. | Keep `--join_higher_classes true`, profile per-day class support, and do not claim multiclass support. |
 | Smoothed AUC | With `instance_window > 1`, labels use the selected classification evaluation method but probability scores are not aggregated equivalently. | Do not use smoothed-run AUC as a comparable result. |
@@ -643,7 +653,9 @@ The highest-impact restrictions for model authors are:
 | Outputs | Single-day CSV/MLflow output is incomplete, and a date-range run persists only its last-fold model. | Treat single-day Joblib/log files as authoritative and label the saved date-range model as the last-fold model. |
 | Presentation and seeds | MLflow confusion labels may contradict `--invert_threshold_logic`, and classification confusion bootstrap uses fixed seed 42. | Determine class meaning from metadata and record the fixed-seed exception. |
 
-Treat these as explicit boundaries when publishing results. A fix should include focused tests and updates to the CLI help, this guide, the detailed issue document, and any affected run/tutorial documentation.
+Treat these as explicit boundaries when publishing results. A fix should
+include focused tests and updates to the CLI help, this guide, and any affected
+run/tutorial documentation.
 
 ## 7. Disclaimer
 

@@ -239,12 +239,22 @@ comparison variants, not additional best-paper configurations. Exact results
 can still vary with dataset revision, dependencies, and runtime environment;
 retain the generated metadata and source revision with every result.
 
-#### Canonical central baseline for new experiments
+#### Canonical baseline for new experiments
 
-New experiments should normally start from the `central` launchers. They use:
+New experiments should normally start from the canonical improved baseline. It
+uses:
 
 - the central source-frame target and timestamp during reduction;
-- the central predicted/true value and timestamp during multi-instance evaluation.
+- majority aggregation of predicted and true labels for classification;
+- mean aggregation of predicted and true values for regression;
+- the central reduced-instance timestamp during multi-instance evaluation.
+
+Central reduction aligns each target with the temporal center of its feature
+window. Majority classification and mean regression provide task-appropriate
+temporal smoothing while applying the same operation to predictions and truth.
+The central evaluation timestamp represents the temporal center of that
+smoothed output. These choices require odd-sized windows when a central
+timestamp is selected.
 
 Classification launchers use a 1,000 m threshold. Regression launchers are
 provided for 1,000 m and 5,000 m. Every configuration has `iw1` and `iw5`
@@ -254,7 +264,7 @@ variants, where `iw` is the `instance_window`. For example:
 - `scripts/run_xgb_regression_central_1000m_iw5.sh`;
 - `scripts/run_xgb_regression_central_5000m_iw5.sh`.
 
-The central baseline uses the improved interface and is not presented as a
+The canonical baseline uses the improved interface and is not presented as a
 reproduction of the paper. The [experiment guide](docs/run-experiments.md)
 contains complete commands, and the
 [model reference](docs/model-reference.md#15-legacy-j-stars-compatibility)
@@ -283,7 +293,7 @@ If you use the dataset, repository software, methodology, experimental results o
 - <a id="zenodo-cite"></a>The published [Marlinks-NS DAS dataset deposited in Zenodo](https://doi.org/10.5281/zenodo.15611778).
 > E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, M. R. Fernández-Ruiz, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Marlinks-NS DAS Dataset for vessel detection and distance estimation using distributed acoustic sensing in submarine optical fiber cables”, Zenodo. doi: [10.5281/zenodo.15611778](https://doi.org/10.5281/zenodo.15611778)
 - <a id="jstars-cite">The accepted [IEEE JSTARS article](https://doi.org/10.1109/JSTARS.2026.3716768) describing our vessel-detection and localization methodology and experiments.
-> E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables”. Accepted for publication in the IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing, 2026. doi: [10.1109/JSTARS.2026.3716768](https://doi.org/10.1109/JSTARS.2026.37167)
+> E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables”. Accepted for publication in the IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing, 2026. doi: [10.1109/JSTARS.2026.3716768](https://doi.org/10.1109/JSTARS.2026.3716768)
 - <a id="data-descriptor-cite">The [ArXiV preprint documenting and validating the Marlinks-NS dataset](https://doi.org/...) (submitted to be considered for publication as a Data Descriptor to the *Scientific Data* journal).
 > E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, *“A Distributed Acoustic Sensing Dataset for Vessel Detection and Localization in Submarine Cable Protection”*. ArXiv preprint arXiv:2509.11614. doi: [10.48550/arXiv.2607.28306](https://doi.org/10.48550/arXiv.2607.28306)
 
