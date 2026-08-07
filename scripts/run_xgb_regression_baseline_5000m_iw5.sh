@@ -14,7 +14,7 @@ mkdir -p results
   --model_file models/baseline_xgb_regression_model.py \
   --is_NN false \
   --is_regression true \
-  --regression_threshold 1000 \
+  --regression_threshold 5000 \
   --regression_target_method central_t \
   --reduction_timestamp_method central_t \
   --regression_evaluation_method mean \
@@ -28,6 +28,6 @@ mkdir -p results
   --reduce_to_size 250 \
   --instance_window 5 \
   --random_state 42 \
-  --run_name xgb-regression-central-mean-1000m-iw5 \
-  --mlflow_experiment_name DAS-XGBoost-regression-central-mean-baseline \
+  --run_name xgb-regression-baseline-5000m-iw5 \
+  --mlflow_experiment_name DAS-XGBoost-regression-baseline \
   --mlflow_tracking_uri sqlite:///mlflow.db
