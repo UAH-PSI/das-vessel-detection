@@ -1,0 +1,29 @@
+[project]
+name = "das-vessel-detection"
+version = "0.1.0"
+description = "Research software for vessel detection and distance estimation with DAS data"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy==1.26.4",
+    "scikit-learn==1.5.1",
+    "pandas",
+    "matplotlib==3.8.4",
+    "h5py",
+    "opencv-python",
+    "tqdm",
+    "imbalanced-learn",
+    "shap",
+    "torch==2.2.2",
+    "lightgbm",
+    "prefect",
+    "mlflow",
+    "xgboost",
+    "scipy",
+    "seaborn",
+    "tabulate",
+    "mlflow-export-import",
+]
+
+[tool.uv]
+package = false
