@@ -8,7 +8,7 @@ REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 cd "${REPO_ROOT}"
 mkdir -p results
 
-python src/model_experiment_hdf5.py \
+uv run python src/model_experiment_hdf5.py \
     --h5_path data/dataset_sensor_range_1440_1690_0.h5 \
     --model_file models/baseline_xgb_classification_model.py \
     --is_NN false \
