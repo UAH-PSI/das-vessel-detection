@@ -103,7 +103,8 @@ The main repository resources include:
 | `data/reduced_dataset_sensor_range_1440_1690.h5`                      | Ten-minute demonstration extract                                             |
 | `data/fbands.csv`                                                     | Frequency-band boundaries used for feature extraction                        |
 | `data/combined_plot_interval_20230616T155500_20230616T160500.png`     | Example visualization generated from the demonstration data                  |
-| `requirements.txt`                                                    | Python package requirements                                                  |
+| `pyproject.toml`                                                       | Project metadata and Python package requirements                            |
+| `uv.lock`                                                              | Locked dependency versions for reproducible environments                    |
 | `Makefile`                                                            | Builds README documentation and generated assets under `build/`              |
 | `logos/`                                                              | Funding and acknowledgment graphics                                          |
 | `LICENSE`                                                             | License applying to the repository software                                  |
@@ -115,22 +116,21 @@ This repository is the actively maintained location for software updates and ext
 
 ### Installation
 
-Clone the repository and create an isolated environment:
+The project requires [`uv`](https://docs.astral.sh/uv/) available on `PATH`.
+
+Clone the repository and synchronize its isolated environment with `uv`:
 
 ```bash
 git clone https://github.com/UAH-PSI/das-vessel-detection.git
 cd das-vessel-detection
 
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+uv sync
 ```
 
-On Windows PowerShell, activate the environment with:
+Run repository commands through the synchronized environment:
 
 ```powershell
-.\.venv\Scripts\Activate.ps1
+uv run python src/model_experiment_hdf5.py --help
 ```
 
 ### Data partitioning recommendation
@@ -164,7 +164,7 @@ To ensure direct comparability with the associated studies, users are encouraged
 `src/load_and_split_dataset.py` loads `X`, `y`, `datetimes` and, when present, `ship_info`. It reserves all observations from the selected recording day for testing and uses the remaining days for training:
 
 ```bash
-python src/load_and_split_dataset.py \
+uv run python src/load_and_split_dataset.py \
   --h5_path /path/to/dataset_sensor_range_1440_1690_0.h5 \
   --test_date 2023-06-16 \
   --output_dir ./splits/
@@ -184,7 +184,7 @@ Use the HDF5 file downloaded from [Zenodo record](https://doi.org/10.5281/zenodo
 `src/plot_energy_distance.py` generates a combined visualization of the energy-band features and vessel-distance labels. For example:
 
 ```bash
-python src/plot_energy_distance.py \
+uv run python src/plot_energy_distance.py \
   --h5 data/reduced_dataset_sensor_range_1440_1690.h5 \
   --time_interval 2023-06-16T15:55:00+00:00 2023-06-16T16:05:00+00:00 \
   --save_dir data \

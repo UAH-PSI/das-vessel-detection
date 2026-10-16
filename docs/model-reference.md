@@ -219,7 +219,7 @@ def load_model():
 Example date-range run:
 
 ```bash
-python src/model_experiment_hdf5.py \
+uv run python src/model_experiment_hdf5.py \
   --h5_path data/dataset_sensor_range_1440_1690_0.h5 \
   --model_file models/my_regressor.py \
   --is_regression true \
@@ -313,7 +313,7 @@ def load_model():
 Example date-range run:
 
 ```bash
-python src/model_experiment_hdf5.py \
+uv run python src/model_experiment_hdf5.py \
   --h5_path data/dataset_sensor_range_1440_1690_0.h5 \
   --model_file models/my_classifier.py \
   --is_regression false \

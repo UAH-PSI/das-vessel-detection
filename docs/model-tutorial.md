@@ -36,20 +36,18 @@ The rest of the tutorial first covers the steps shared by all four paths. You wi
 
 ## 2. Prepare the shared environment
 
-### 2.1 Create and activate a virtual environment
+### 2.1 Synchronize the `uv` environment
 
 For example:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
+uv sync
 ```
 
 Confirm that the experiment command can be imported and that its help is available:
 
 ```bash
-python src/model_experiment_hdf5.py --help
+uv run python src/model_experiment_hdf5.py --help
 ```
 
 The command must be launched from the repository root because the entry point imports other modules from `src/` and dynamically loads the model file passed on the command line.
@@ -162,7 +160,7 @@ Edit `tutorial_xgb_regressor.py`. For a first controlled experiment, change one 
 ### 4.3 Run a one-day integration test
 
 ```bash
-python src/model_experiment_hdf5.py \
+uv run python src/model_experiment_hdf5.py \
   --h5_path "$H5_PATH" \
   --model_file models/tutorial_xgb_regressor.py \
   --is_regression true \
@@ -246,7 +244,7 @@ cp models/baseline_xgb_classification_model.py models/tutorial_xgb_classifier.py
 After making one model change, run:
 
 ```bash
-python src/model_experiment_hdf5.py \
+uv run python src/model_experiment_hdf5.py \
   --h5_path "$H5_PATH" \
   --model_file models/tutorial_xgb_classifier.py \
   --is_regression false \
@@ -309,7 +307,7 @@ the runner. Keep the final layer at one output for scalar distance regression.
 ### 6.3 Run the NN integration test
 
 ```bash
-python src/model_experiment_hdf5.py \
+uv run python src/model_experiment_hdf5.py \
   --h5_path "$H5_PATH" \
   --model_file models/tutorial_nn_regressor.py \
   --is_regression true \
@@ -366,7 +364,7 @@ Add the imports, `SimpleClassificationNN` class, and loader implementation
 shown above to `models/tutorial_nn_classifier.py`. Then run:
 
 ```bash
-python src/model_experiment_hdf5.py \
+uv run python src/model_experiment_hdf5.py \
   --h5_path "$H5_PATH" \
   --model_file models/tutorial_nn_classifier.py \
   --is_regression false \
@@ -435,7 +433,7 @@ After the selected path succeeds on one day, reuse the same command and add an e
 Also change the run name from `...-smoke` to a descriptive scientific name. For example, the full XGBoost classification command becomes:
 
 ```bash
-python src/model_experiment_hdf5.py \
+uv run python src/model_experiment_hdf5.py \
   --h5_path "$H5_PATH" \
   --model_file models/tutorial_xgb_classifier.py \
   --is_regression false \

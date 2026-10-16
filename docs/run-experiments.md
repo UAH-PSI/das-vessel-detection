@@ -19,11 +19,11 @@ Run commands from the repository root.
 
 ### 1.1 Prepare the environment
 
+Ensure that `uv` is installed and available on `PATH`, then run:
+
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-python src/model_experiment_hdf5.py --help
+uv sync
+uv run python src/model_experiment_hdf5.py --help
 ```
 
 The maintained scripts expect the dataset at:
@@ -39,7 +39,7 @@ If your dataset is elsewhere, either change `--h5_path` in the command or make a
 The direct command is:
 
 ```bash
-python src/model_experiment_hdf5.py \
+uv run python src/model_experiment_hdf5.py \
   --h5_path data/dataset_sensor_range_1440_1690_0.h5 \
   --model_file models/baseline_xgb_regression_model.py \
   --is_NN false \
@@ -71,7 +71,7 @@ This experiment removes targets above 1,000 m before training and evaluation. It
 ### 1.3 Run the best classification example
 
 ```bash
-python src/model_experiment_hdf5.py \
+uv run python src/model_experiment_hdf5.py \
   --h5_path data/dataset_sensor_range_1440_1690_0.h5 \
   --model_file models/baseline_xgb_classification_model.py \
   --is_NN false \
@@ -130,7 +130,7 @@ The serialized model artifact from a date-range run is the model fitted during t
 While changing code or moving to a new machine, first remove `--test_date_end` and use a single day:
 
 ```bash
-python src/model_experiment_hdf5.py \
+uv run python src/model_experiment_hdf5.py \
   --h5_path data/dataset_sensor_range_1440_1690_0.h5 \
   --model_file models/baseline_xgb_classification_model.py \
   --is_regression false \
@@ -403,7 +403,7 @@ The repository provides `src/print_experiment_results.py`.
 ### 9.1 Print one experiment
 
 ```bash
-python src/print_experiment_results.py \
+uv run python src/print_experiment_results.py \
   results/DAS-XGBoost-classification/RUN_DIRECTORY/metrics.joblib \
   --show-metadata \
   --csv classification-report.csv
@@ -414,7 +414,7 @@ The report detects task and scope and also writes a flattened comparison CSV. Fo
 ### 9.2 Compare compatible experiments
 
 ```bash
-python src/print_experiment_results.py \
+uv run python src/print_experiment_results.py \
   results/DAS-XGBoost-classification/BASELINE/metrics.joblib \
   results/DAS-XGBoost-classification/CANDIDATE/metrics.joblib \
   --show-metadata \
@@ -644,8 +644,8 @@ A compact pre-run record can be captured with:
 ```bash
 git rev-parse HEAD
 git status --short
-python -V
-python -m pip freeze
+uv run python -V
+uv pip freeze
 ```
 
 Store that information beside the experiment manifest or execution log. The automatic metadata is extensive, but it does not replace dataset versioning or a record of the source revision.
