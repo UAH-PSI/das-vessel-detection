@@ -317,7 +317,7 @@ def parse_args():
 
     parser.add_argument(
         '--invert_threshold_logic', type=str, default="false", choices=["true","false"],
-        help="If true, class 1 = y ≤ threshold (instead of y > threshold)"
+        help="If true, class 1 = y <= threshold (instead of y > threshold)"
         )
 
 
@@ -529,15 +529,15 @@ def main():
         if y_min is not None and y_max is not None:
             # Both bounds provided: y_min <= y <= y_max
             mask = (y_h5 >= y_min) & (y_h5 <= y_max)
-            logger.info(f"Filtering to {y_min} ≤ y ≤ {y_max} (keeping {mask.sum()} of {len(y_h5)} points)")
+            logger.info(f"Filtering to {y_min} <= y <= {y_max} (keeping {mask.sum()} of {len(y_h5)} points)")
         elif y_min is not None:
             # Only minimum provided: y >= y_min
             mask = (y_h5 >= y_min)
-            logger.info(f"Filtering to y ≥ {y_min} (keeping {mask.sum()} of {len(y_h5)} points)")
+            logger.info(f"Filtering to y >= {y_min} (keeping {mask.sum()} of {len(y_h5)} points)")
         else:
             # Only maximum provided: y <= y_max
             mask = (y_h5 <= y_max)
-            logger.info(f"Filtering to y ≤ {y_max} (keeping {mask.sum()} of {len(y_h5)} points)")
+            logger.info(f"Filtering to y <= {y_max} (keeping {mask.sum()} of {len(y_h5)} points)")
 
         # Apply same mask to features, raw y, override y (if any), and datetimes
         X, y_h5, datetimes = X[mask], y_h5[mask], datetimes[mask]
